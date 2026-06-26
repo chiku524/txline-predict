@@ -1,69 +1,141 @@
+"use client";
+
+import { useState } from "react";
 import type { PredictionMarket } from "@txline-predict/txline-client";
+import { BetPanel } from "@/components/BetPanel";
 import { lamportsToUsdc } from "@/lib/demo-data";
-import { DepositButton } from "@/components/DepositButton";
+import {
+  formatKickoff,
+  formatOdds,
+  formatUsdc,
+} from "@/lib/betting";
 
 function MarketStatus({ status }: { status: PredictionMarket["status"] }) {
   const map = {
-    open: "badge-open",
-    locked: "badge-locked",
-    resolved: "badge-resolved",
-    cancelled: "badge-live",
+    open: { className: "badge-open", label: "Open" },
+    locked: { className: "badge-locked", label: "Locked" },
+    resolved: { className: "badge-resolved", label: "Settled" },
+    cancelled: { className: "badge-live", label: "Cancelled" },
   } as const;
-  return <span className={`badge ${map[status]}`}>{status}</span>;
+  const { className, label } = map[status];
+  return <span className={`badge ${className}`}>{label}</span>;
+}
+
+function marketTypeLabel(type: PredictionMarket["type"]): string {
+  if (type === "match_winner") return "Match winner";
+  if (type === "total_goals") return "Total goals";
+  return type;
 }
 
 export function MarketCard({ market }: { market: PredictionMarket }) {
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
+  const poolUsdc = lamportsToUsdc(market.totalPoolLamports);
+  const canBet = market.status === "open";
+  const selected =
+    selectedIndex != null ? market.outcomes[selectedIndex] : null;
+
   return (
-    <article className="card flex flex-col p-5">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <h3 className="text-base font-semibold leading-snug">{market.title}</h3>
+    <article className="market-card">
+      <header className="market-card__header">
+        <div className="min-w-0 flex-1">
+          <p className="market-card__type">{marketTypeLabel(market.type)}</p>
+          <h3 className="market-card__title">{market.title}</h3>
+          <p className="market-card__fixture">
+            {market.homeTeam} vs {market.awayTeam}
+          </p>
+          <p className="market-card__kickoff">{formatKickoff(market.kickoffUtc)}</p>
+        </div>
         <MarketStatus status={market.status} />
+      </header>
+
+      <div className="market-card__pool">
+        <span className="market-card__pool-label">Total pool</span>
+        <span className="market-card__pool-value">
+          {formatUsdc(Number(poolUsdc))} USDC
+        </span>
       </div>
-      <p className="mb-4 text-sm text-[var(--muted)]">
-        Pool: {lamportsToUsdc(market.totalPoolLamports)} USDC (TxLINE-implied)
-      </p>
-      <div className="flex flex-col gap-2">
+
+      <div className="market-card__outcomes" role="list">
         {market.outcomes.map((o, index) => {
-          const pct =
+          const poolPct =
             market.totalPoolLamports > 0
               ? Math.round((o.poolLamports / market.totalPoolLamports) * 100)
               : 0;
           const isWinner = market.resolvedOutcomeId === o.id;
+          const isSelected = selectedIndex === index;
+          const odds = formatOdds(o.impliedProbability);
+
           return (
-            <div
+            <button
               key={o.id}
-              className={`rounded-xl border px-3 py-2 ${
-                isWinner
-                  ? "border-[var(--accent)] bg-[rgba(34,211,166,0.08)]"
-                  : "border-[var(--border)] bg-[var(--surface-2)]"
-              }`}
+              type="button"
+              role="listitem"
+              disabled={!canBet}
+              onClick={() =>
+                setSelectedIndex((prev) => (prev === index ? null : index))
+              }
+              className={[
+                "outcome-option",
+                isWinner && "outcome-option--winner",
+                isSelected && "outcome-option--selected",
+                !canBet && "outcome-option--disabled",
+              ]
+                .filter(Boolean)
+                .join(" ")}
             >
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium">{o.label}</span>
-                <span className="text-[var(--muted)]">{pct}% pool</span>
-              </div>
-              {o.impliedProbability != null && (
-                <div className="mt-1 text-xs text-[var(--muted)]">
-                  TxLINE implied: {(o.impliedProbability * 100).toFixed(1)}%
+              <div className="outcome-option__top">
+                <span className="outcome-option__label">{o.label}</span>
+                <div className="outcome-option__odds">
+                  <span className="outcome-option__odds-value">{odds}x</span>
+                  {o.impliedProbability != null && (
+                    <span className="outcome-option__prob">
+                      {(o.impliedProbability * 100).toFixed(0)}%
+                    </span>
+                  )}
                 </div>
-              )}
-              {market.status === "open" && (
-                <DepositButton
-                  market={market}
-                  outcomeIndex={index}
-                  label={o.label}
+              </div>
+              <div className="outcome-option__bar-track" aria-hidden>
+                <div
+                  className="outcome-option__bar-fill"
+                  style={{ width: `${Math.max(poolPct, 4)}%` }}
                 />
-              )}
-            </div>
+              </div>
+              <div className="outcome-option__footer">
+                <span>{poolPct}% of pool</span>
+                {canBet && (
+                  <span className="outcome-option__cta">
+                    {isSelected ? "Selected" : "Tap to bet"}
+                  </span>
+                )}
+              </div>
+            </button>
           );
         })}
       </div>
+
+      {canBet && selected && selectedIndex != null && (
+        <BetPanel
+          market={market}
+          outcomeIndex={selectedIndex}
+          label={selected.label}
+          impliedProbability={selected.impliedProbability}
+          onCancel={() => setSelectedIndex(null)}
+        />
+      )}
+
+      {!canBet && market.status === "locked" && (
+        <p className="market-card__notice">
+          Betting closed — kicks off soon or match in progress.
+        </p>
+      )}
+
       {market.proof && (
-        <div className="mt-4 rounded-xl border border-dashed border-[var(--border)] p-3 text-xs">
-          <div className="mb-1 font-semibold text-[var(--accent)]">
+        <div className="market-card__proof">
+          <div className="font-semibold text-[var(--accent)]">
             TxLINE verification receipt
           </div>
-          <div className="break-all font-mono text-[var(--muted)]">
+          <div className="mt-1 break-all font-mono text-[var(--muted)]">
             root: {market.proof.root.slice(0, 24)}…
           </div>
         </div>

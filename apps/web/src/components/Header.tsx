@@ -33,7 +33,14 @@ export function Header() {
             </Link>
           ))}
         </nav>
-        <WalletMultiButton />
+        <div className="flex items-center gap-3">
+          <span className="hidden rounded-full border border-[var(--border)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)] sm:inline">
+            {process.env.NEXT_PUBLIC_SOLANA_NETWORK === "mainnet-beta"
+              ? "Mainnet"
+              : "Devnet"}
+          </span>
+          <WalletMultiButton />
+        </div>
       </div>
     </header>
   );
