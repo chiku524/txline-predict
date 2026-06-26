@@ -21,10 +21,14 @@ export function SolanaProviders({ children }: { children: ReactNode }) {
   const network = (process.env.NEXT_PUBLIC_SOLANA_NETWORK ?? "devnet") as
     | "devnet"
     | "mainnet-beta";
-  const endpoint = useMemo(
-    () => clusterApiUrl(network === "mainnet-beta" ? "mainnet-beta" : "devnet"),
-    [network]
-  );
+  const endpoint = useMemo(() => {
+    if (process.env.NEXT_PUBLIC_RPC_URL) {
+      return process.env.NEXT_PUBLIC_RPC_URL;
+    }
+    return clusterApiUrl(
+      network === "mainnet-beta" ? "mainnet-beta" : "devnet"
+    );
+  }, [network]);
   const wallets = useMemo(
     () => [new PhantomWalletAdapter(), new SolflareWalletAdapter()],
     []

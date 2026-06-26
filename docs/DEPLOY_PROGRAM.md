@@ -20,13 +20,13 @@ anchor build
 anchor deploy --provider.cluster devnet
 ```
 
-Program ID (declared in `lib.rs`): `2teqUWPB97HCP3131WaKMWgYifKRrqQRWweHqpCHhsPg`
+Program ID (declared in `lib.rs`): `47BEuEzRc1Aj6QAZvYkuebLSqGRAcKnLs8HLuW8Gc5e3`
 
 After deploy, set in `apps/web/.env.local`:
 
 ```
 NEXT_PUBLIC_SOLANA_NETWORK=devnet
-NEXT_PUBLIC_PREDICT_MARKET_PROGRAM_ID=2teqUWPB97HCP3131WaKMWgYifKRrqQRWweHqpCHhsPg
+NEXT_PUBLIC_PREDICT_MARKET_PROGRAM_ID=47BEuEzRc1Aj6QAZvYkuebLSqGRAcKnLs8HLuW8Gc5e3
 ```
 
 Users need devnet USDC (`4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`) to deposit.

@@ -10,6 +10,8 @@ dist/
 build/
 target/
 target-deploy/
+target/deploy/*.json
+!target/deploy/predict_market-keypair.json
 
 # Env
 .env
@@ -23,6 +25,7 @@ test-ledger/
 **/keypair.json
 platform/platform-wallet.json
 platform/credentials.json
+platform/local-usdc-mint.txt
 
 # IDE
 .idea/

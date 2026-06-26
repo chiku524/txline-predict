@@ -1,7 +1,8 @@
 import { PublicKey } from "@solana/web3.js";
 
 export const PREDICT_MARKET_PROGRAM_ID = new PublicKey(
-  "2teqUWPB97HCP3131WaKMWgYifKRrqQRWweHqpCHhsPg"
+  process.env.NEXT_PUBLIC_PREDICT_MARKET_PROGRAM_ID ??
+    "47BEuEzRc1Aj6QAZvYkuebLSqGRAcKnLs8HLuW8Gc5e3"
 );
 
 /** Circle devnet USDC — swap on Jupiter or use faucet for testing. */
@@ -14,6 +15,8 @@ export const MAINNET_USDC_MINT = new PublicKey(
 );
 
 export function getUsdcMint(network?: string): PublicKey {
+  const override = process.env.NEXT_PUBLIC_USDC_MINT;
+  if (override) return new PublicKey(override);
   return network === "mainnet-beta" ? MAINNET_USDC_MINT : DEVNET_USDC_MINT;
 }
 

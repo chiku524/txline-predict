@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
-declare_id!("2teqUWPB97HCP3131WaKMWgYifKRrqQRWweHqpCHhsPg");
+declare_id!("47BEuEzRc1Aj6QAZvYkuebLSqGRAcKnLs8HLuW8Gc5e3");
 
 /// TxLINE mainnet program — CPI target for validate_stat settlement.
 pub const TXLINE_PROGRAM_ID: Pubkey = pubkey!("9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA");

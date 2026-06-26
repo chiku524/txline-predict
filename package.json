@@ -12,7 +12,11 @@
     "anchor:test": "cd programs/predict-market && anchor test",
     "wallet:generate": "tsx scripts/generate-platform-wallet.ts",
     "txline:setup": "tsx scripts/setup-txline-access.ts",
-    "txline:setup:devnet": "cross-env TXLINE_USE_DEVNET=true tsx scripts/setup-txline-access.ts"
+    "txline:setup:devnet": "cross-env TXLINE_USE_DEVNET=true tsx scripts/setup-txline-access.ts",
+    "devnet:fund": "tsx scripts/fund-devnet.ts",
+    "devnet:deploy": "wsl bash scripts/deploy-devnet.sh",
+    "devnet:wait-deploy": "wsl bash scripts/wait-and-deploy-devnet.sh",
+    "local:dev": "wsl bash scripts/setup-local-dev.sh"
   },
   "workspaces": [
     "apps/*",

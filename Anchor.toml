@@ -6,17 +6,17 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-predict_market = "2teqUWPB97HCP3131WaKMWgYifKRrqQRWweHqpCHhsPg"
+predict_market = "47BEuEzRc1Aj6QAZvYkuebLSqGRAcKnLs8HLuW8Gc5e3"
 
 [programs.devnet]
-predict_market = "2teqUWPB97HCP3131WaKMWgYifKRrqQRWweHqpCHhsPg"
+predict_market = "47BEuEzRc1Aj6QAZvYkuebLSqGRAcKnLs8HLuW8Gc5e3"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
 cluster = "devnet"
-wallet = "~/.config/solana/id.json"
+wallet = "platform/platform-wallet.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
