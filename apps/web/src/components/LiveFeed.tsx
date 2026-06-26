@@ -6,53 +6,54 @@ interface FeedEvent {
   id: string;
   type: "score" | "odds" | "status";
   message: string;
+  fixtureId?: string;
   at: string;
 }
 
-const DEMO_EVENTS: FeedEvent[] = [
+const FALLBACK: FeedEvent[] = [
   {
-    id: "1",
-    type: "odds",
-    message: "Brazil vs Germany — home implied 42% → 43%",
-    at: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    type: "score",
-    message: "Argentina 1-1 France — GOAL 67' (Messi)",
-    at: new Date().toISOString(),
-  },
-  {
-    id: "3",
+    id: "boot",
     type: "status",
-    message: "Spain vs England — match finished 2-1",
+    message: "Connecting to TxLINE…",
     at: new Date().toISOString(),
   },
 ];
 
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
 export function LiveFeed() {
-  const [events, setEvents] = useState<FeedEvent[]>(DEMO_EVENTS);
+  const [events, setEvents] = useState<FeedEvent[]>(FALLBACK);
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
     const es = new EventSource("/api/txline/stream");
+
     es.onopen = () => setConnected(true);
+
     es.onmessage = (e) => {
       try {
-        const data = JSON.parse(e.data) as { message: string; type: FeedEvent["type"] };
+        const data = JSON.parse(e.data) as Omit<FeedEvent, "id">;
         setEvents((prev) => [
           {
             id: crypto.randomUUID(),
             type: data.type ?? "status",
             message: data.message,
-            at: new Date().toISOString(),
+            fixtureId: data.fixtureId,
+            at: data.at ?? new Date().toISOString(),
           },
-          ...prev.slice(0, 19),
+          ...prev.slice(0, 24),
         ]);
       } catch {
-        /* demo heartbeat */
+        /* ignore */
       }
     };
+
     es.onerror = () => setConnected(false);
     return () => es.close();
   }, []);
@@ -62,16 +63,19 @@ export function LiveFeed() {
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold">TxLINE live feed</h3>
         <span className={`badge ${connected ? "badge-open" : "badge-locked"}`}>
-          {connected ? "SSE connected" : "Demo mode"}
+          {connected ? "Live SSE" : "Reconnecting"}
         </span>
       </div>
-      <ul className="flex max-h-64 flex-col gap-2 overflow-y-auto">
+      <ul className="flex max-h-72 flex-col gap-2 overflow-y-auto">
         {events.map((ev) => (
           <li
             key={ev.id}
             className="rounded-lg bg-[var(--surface-2)] px-3 py-2 text-xs"
           >
-            <span className="mr-2 uppercase text-[var(--accent)]">{ev.type}</span>
+            <div className="mb-1 flex items-center justify-between gap-2 text-[10px] text-[var(--muted)]">
+              <span className="uppercase text-[var(--accent)]">{ev.type}</span>
+              <span>{formatTime(ev.at)}</span>
+            </div>
             {ev.message}
           </li>
         ))}

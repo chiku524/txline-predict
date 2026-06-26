@@ -1,35 +1,49 @@
 use anchor_lang::prelude::*;
+use anchor_spl::associated_token::AssociatedToken;
+use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
-declare_id!("PredMkt1111111111111111111111111111111111111");
+declare_id!("2teqUWPB97HCP3131WaKMWgYifKRrqQRWweHqpCHhsPg");
 
 /// TxLINE mainnet program — CPI target for validate_stat settlement.
 pub const TXLINE_PROGRAM_ID: Pubkey = pubkey!("9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA");
+
+const MAX_OUTCOMES: usize = 8;
 
 #[program]
 pub mod predict_market {
     use super::*;
 
-    /// Create a binary/multi-outcome market escrow for a World Cup fixture.
+    /// Create a market escrow vault for a World Cup fixture.
     pub fn create_market(
         ctx: Context<CreateMarket>,
         fixture_id: String,
         outcome_count: u8,
         lock_timestamp: i64,
     ) -> Result<()> {
-        require!(outcome_count >= 2 && outcome_count <= 8, PredictError::InvalidOutcomes);
+        require!(
+            outcome_count >= 2 && outcome_count <= MAX_OUTCOMES as u8,
+            PredictError::InvalidOutcomes
+        );
+        require!(fixture_id.len() <= 64, PredictError::FixtureIdTooLong);
+
         let market = &mut ctx.accounts.market;
         market.authority = ctx.accounts.authority.key();
+        market.vault = ctx.accounts.vault.key();
         market.fixture_id = fixture_id;
         market.outcome_count = outcome_count;
         market.lock_timestamp = lock_timestamp;
         market.status = MarketStatus::Open;
         market.total_deposited = 0;
+        market.outcome_pools = [0u64; MAX_OUTCOMES];
+        market.winning_outcome = None;
         market.bump = ctx.bumps.market;
         Ok(())
     }
 
-    /// Deposit USDC into a specific outcome side of the pool.
+    /// Deposit USDC into an outcome side of the pool.
     pub fn deposit(ctx: Context<Deposit>, outcome_index: u8, amount: u64) -> Result<()> {
+        require!(amount > 0, PredictError::InvalidAmount);
+
         let market = &ctx.accounts.market;
         require!(market.status == MarketStatus::Open, PredictError::MarketClosed);
         require!(
@@ -41,10 +55,24 @@ pub mod predict_market {
             PredictError::MarketLocked
         );
 
-        // SPL token transfer into vault handled by anchor-spl in full implementation
-        ctx.accounts.market.total_deposited = ctx
-            .accounts
-            .market
+        token::transfer(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.depositor_token_account.to_account_info(),
+                    to: ctx.accounts.vault.to_account_info(),
+                    authority: ctx.accounts.depositor.to_account_info(),
+                },
+            ),
+            amount,
+        )?;
+
+        let market = &mut ctx.accounts.market;
+        let idx = outcome_index as usize;
+        market.outcome_pools[idx] = market.outcome_pools[idx]
+            .checked_add(amount)
+            .ok_or(PredictError::Overflow)?;
+        market.total_deposited = market
             .total_deposited
             .checked_add(amount)
             .ok_or(PredictError::Overflow)?;
@@ -53,7 +81,6 @@ pub mod predict_market {
     }
 
     /// Settle market after keeper submits TxLINE Merkle proof via CPI.
-    /// Full implementation will invoke txoracle::validate_stat before releasing funds.
     pub fn settle_market(
         ctx: Context<SettleMarket>,
         winning_outcome: u8,
@@ -66,8 +93,7 @@ pub mod predict_market {
             PredictError::InvalidOutcome
         );
 
-        // TODO: CPI into TxLINE validate_stat instruction
-        // invoke_signed CPI with proof leaves to verify final score on-chain
+        // TODO: CPI into TxLINE validate_stat before releasing vault funds.
 
         market.status = MarketStatus::Resolved;
         market.winning_outcome = Some(winning_outcome);
@@ -90,6 +116,18 @@ pub struct CreateMarket<'info> {
     )]
     pub market: Account<'info, Market>,
 
+    pub usdc_mint: Account<'info, Mint>,
+
+    #[account(
+        init,
+        payer = authority,
+        associated_token::mint = usdc_mint,
+        associated_token::authority = market,
+    )]
+    pub vault: Account<'info, TokenAccount>,
+
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
 }
 
@@ -100,6 +138,17 @@ pub struct Deposit<'info> {
 
     #[account(mut)]
     pub market: Account<'info, Market>,
+
+    #[account(mut)]
+    pub depositor_token_account: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        constraint = vault.key() == market.vault @ PredictError::InvalidVault
+    )]
+    pub vault: Account<'info, TokenAccount>,
+
+    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
@@ -118,12 +167,14 @@ pub struct SettleMarket<'info> {
 #[derive(InitSpace)]
 pub struct Market {
     pub authority: Pubkey,
+    pub vault: Pubkey,
     #[max_len(64)]
     pub fixture_id: String,
     pub outcome_count: u8,
     pub lock_timestamp: i64,
     pub status: MarketStatus,
     pub total_deposited: u64,
+    pub outcome_pools: [u64; MAX_OUTCOMES],
     pub winning_outcome: Option<u8>,
     pub bump: u8,
 }
@@ -146,6 +197,12 @@ pub enum PredictError {
     InvalidOutcome,
     #[msg("Outcome count must be between 2 and 8")]
     InvalidOutcomes,
+    #[msg("Deposit amount must be positive")]
+    InvalidAmount,
+    #[msg("Fixture id too long")]
+    FixtureIdTooLong,
+    #[msg("Vault does not match market")]
+    InvalidVault,
     #[msg("Arithmetic overflow")]
     Overflow,
 }

@@ -1,15 +1,15 @@
 [toolchain]
-anchor_version = "0.31.1"
+anchor_version = "0.30.1"
 
 [features]
 resolution = true
 skip-lint = false
 
 [programs.localnet]
-predict_market = "PredMkt1111111111111111111111111111111111111"
+predict_market = "2teqUWPB97HCP3131WaKMWgYifKRrqQRWweHqpCHhsPg"
 
 [programs.devnet]
-predict_market = "PredMkt1111111111111111111111111111111111111"
+predict_market = "2teqUWPB97HCP3131WaKMWgYifKRrqQRWweHqpCHhsPg"
 
 [registry]
 url = "https://api.apr.dev"

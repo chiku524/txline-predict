@@ -69,12 +69,15 @@ txline-predict/
 
 ## Smart contract (devnet)
 
+USDC escrow program: `programs/predict-market` — create market vault, deposit per outcome, settle via TxLINE CPI (WIP).
+
 ```bash
-# Requires Anchor 0.31+ and Solana CLI
-npm run anchor:build
+anchor build && anchor deploy --provider.cluster devnet
 ```
 
-Program ID placeholder: `PredMkt1111111111111111111111111111111111111` — update after `anchor keys sync` and devnet deploy.
+See [docs/DEPLOY_PROGRAM.md](docs/DEPLOY_PROGRAM.md). Program ID: `2teqUWPB97HCP3131WaKMWgYifKRrqQRWweHqpCHhsPg`
+
+After deploy, connect wallet on `/markets` and use **Back {outcome}** to deposit devnet USDC.
 
 ## Hackathon submission checklist
 

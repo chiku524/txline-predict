@@ -1,5 +1,6 @@
 import type { PredictionMarket } from "@txline-predict/txline-client";
 import { lamportsToUsdc } from "@/lib/demo-data";
+import { DepositButton } from "@/components/DepositButton";
 
 function MarketStatus({ status }: { status: PredictionMarket["status"] }) {
   const map = {
@@ -19,10 +20,10 @@ export function MarketCard({ market }: { market: PredictionMarket }) {
         <MarketStatus status={market.status} />
       </div>
       <p className="mb-4 text-sm text-[var(--muted)]">
-        Pool: {lamportsToUsdc(market.totalPoolLamports)} USDC
+        Pool: {lamportsToUsdc(market.totalPoolLamports)} USDC (TxLINE-implied)
       </p>
       <div className="flex flex-col gap-2">
-        {market.outcomes.map((o) => {
+        {market.outcomes.map((o, index) => {
           const pct =
             market.totalPoolLamports > 0
               ? Math.round((o.poolLamports / market.totalPoolLamports) * 100)
@@ -46,18 +47,17 @@ export function MarketCard({ market }: { market: PredictionMarket }) {
                   TxLINE implied: {(o.impliedProbability * 100).toFixed(1)}%
                 </div>
               )}
+              {market.status === "open" && (
+                <DepositButton
+                  market={market}
+                  outcomeIndex={index}
+                  label={o.label}
+                />
+              )}
             </div>
           );
         })}
       </div>
-      {market.status === "open" && (
-        <button
-          type="button"
-          className="mt-4 w-full rounded-xl bg-[var(--accent)] py-2.5 text-sm font-semibold text-[#04120e] transition hover:bg-[var(--accent-dim)]"
-        >
-          Place prediction
-        </button>
-      )}
       {market.proof && (
         <div className="mt-4 rounded-xl border border-dashed border-[var(--border)] p-3 text-xs">
           <div className="mb-1 font-semibold text-[var(--accent)]">

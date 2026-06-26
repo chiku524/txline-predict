@@ -1,0 +1,95 @@
+{
+  "address": "2teqUWPB97HCP3131WaKMWgYifKRrqQRWweHqpCHhsPg",
+  "metadata": {
+    "name": "predict_market",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "USDC escrow prediction pools with TxLINE settlement"
+  },
+  "instructions": [
+    {
+      "name": "create_market",
+      "discriminator": [103, 226, 97, 235, 200, 188, 251, 254],
+      "accounts": [
+        { "name": "authority", "writable": true, "signer": true },
+        { "name": "market", "writable": true, "signer": false },
+        { "name": "usdc_mint", "writable": false, "signer": false },
+        { "name": "vault", "writable": true, "signer": false },
+        { "name": "token_program", "writable": false, "signer": false },
+        { "name": "associated_token_program", "writable": false, "signer": false },
+        { "name": "system_program", "writable": false, "signer": false }
+      ],
+      "args": [
+        { "name": "fixture_id", "type": "string" },
+        { "name": "outcome_count", "type": "u8" },
+        { "name": "lock_timestamp", "type": "i64" }
+      ]
+    },
+    {
+      "name": "deposit",
+      "discriminator": [242, 35, 198, 137, 82, 225, 242, 182],
+      "accounts": [
+        { "name": "depositor", "writable": true, "signer": true },
+        { "name": "market", "writable": true, "signer": false },
+        { "name": "depositor_token_account", "writable": true, "signer": false },
+        { "name": "vault", "writable": true, "signer": false },
+        { "name": "token_program", "writable": false, "signer": false }
+      ],
+      "args": [
+        { "name": "outcome_index", "type": "u8" },
+        { "name": "amount", "type": "u64" }
+      ]
+    },
+    {
+      "name": "settle_market",
+      "discriminator": [193, 153, 95, 216, 166, 6, 144, 217],
+      "accounts": [
+        { "name": "keeper", "writable": false, "signer": true },
+        { "name": "market", "writable": true, "signer": false },
+        { "name": "txline_program", "writable": false, "signer": false }
+      ],
+      "args": [
+        { "name": "winning_outcome", "type": "u8" },
+        { "name": "proof", "type": { "vec": { "array": ["u8", 32] } } }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Market",
+      "discriminator": [219, 190, 213, 55, 0, 227, 198, 154]
+    }
+  ],
+  "types": [
+    {
+      "name": "Market",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "authority", "type": "pubkey" },
+          { "name": "vault", "type": "pubkey" },
+          { "name": "fixture_id", "type": "string" },
+          { "name": "outcome_count", "type": "u8" },
+          { "name": "lock_timestamp", "type": "i64" },
+          { "name": "status", "type": { "defined": { "name": "MarketStatus" } } },
+          { "name": "total_deposited", "type": "u64" },
+          { "name": "outcome_pools", "type": { "array": ["u64", 8] } },
+          { "name": "winning_outcome", "type": { "option": "u8" } },
+          { "name": "bump", "type": "u8" }
+        ]
+      }
+    },
+    {
+      "name": "MarketStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          { "name": "Open" },
+          { "name": "Locked" },
+          { "name": "Resolved" },
+          { "name": "Cancelled" }
+        ]
+      }
+    }
+  ]
+}
