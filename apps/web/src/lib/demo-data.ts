@@ -1,0 +1,125 @@
+import type { TxLineFixture, PredictionMarket } from "@txline-predict/txline-client";
+
+/** Demo fixtures for hackathon demo when TxLINE token is not configured. */
+export const DEMO_FIXTURES: TxLineFixture[] = [
+  {
+    fixtureId: "wc-2026-001",
+    competitionId: 500001,
+    competitionName: "FIFA World Cup 2026",
+    homeTeam: "Brazil",
+    awayTeam: "Germany",
+    kickoffUtc: "2026-07-10T20:00:00Z",
+    status: "scheduled",
+    homeScore: 0,
+    awayScore: 0,
+  },
+  {
+    fixtureId: "wc-2026-002",
+    competitionId: 500001,
+    competitionName: "FIFA World Cup 2026",
+    homeTeam: "Argentina",
+    awayTeam: "France",
+    kickoffUtc: "2026-07-11T17:00:00Z",
+    status: "live",
+    homeScore: 1,
+    awayScore: 1,
+    phase: "2H 67'",
+  },
+  {
+    fixtureId: "wc-2026-003",
+    competitionId: 500001,
+    competitionName: "FIFA World Cup 2026",
+    homeTeam: "Spain",
+    awayTeam: "England",
+    kickoffUtc: "2026-07-09T15:00:00Z",
+    status: "finished",
+    homeScore: 2,
+    awayScore: 1,
+  },
+  {
+    fixtureId: "wc-2026-004",
+    competitionId: 500001,
+    competitionName: "FIFA World Cup 2026",
+    homeTeam: "USA",
+    awayTeam: "Mexico",
+    kickoffUtc: "2026-07-12T22:00:00Z",
+    status: "scheduled",
+    homeScore: 0,
+    awayScore: 0,
+  },
+];
+
+export const DEMO_MARKETS: PredictionMarket[] = [
+  {
+    id: "mkt-001",
+    fixtureId: "wc-2026-001",
+    type: "match_winner",
+    title: "Match Winner — Brazil vs Germany",
+    homeTeam: "Brazil",
+    awayTeam: "Germany",
+    kickoffUtc: "2026-07-10T20:00:00Z",
+    status: "open",
+    totalPoolLamports: 4_200_000_000,
+    outcomes: [
+      { id: "home", label: "Brazil", impliedProbability: 0.42, poolLamports: 1_800_000_000 },
+      { id: "draw", label: "Draw", impliedProbability: 0.28, poolLamports: 900_000_000 },
+      { id: "away", label: "Germany", impliedProbability: 0.30, poolLamports: 1_500_000_000 },
+    ],
+  },
+  {
+    id: "mkt-002",
+    fixtureId: "wc-2026-002",
+    type: "total_goals",
+    title: "Total Goals Over 2.5 — Argentina vs France",
+    homeTeam: "Argentina",
+    awayTeam: "France",
+    kickoffUtc: "2026-07-11T17:00:00Z",
+    status: "locked",
+    totalPoolLamports: 2_800_000_000,
+    outcomes: [
+      { id: "over", label: "Over 2.5", impliedProbability: 0.55, poolLamports: 1_600_000_000 },
+      { id: "under", label: "Under 2.5", impliedProbability: 0.45, poolLamports: 1_200_000_000 },
+    ],
+  },
+  {
+    id: "mkt-003",
+    fixtureId: "wc-2026-003",
+    type: "match_winner",
+    title: "Match Winner — Spain vs England",
+    homeTeam: "Spain",
+    awayTeam: "England",
+    kickoffUtc: "2026-07-09T15:00:00Z",
+    status: "resolved",
+    totalPoolLamports: 6_100_000_000,
+    resolvedOutcomeId: "home",
+    outcomes: [
+      { id: "home", label: "Spain", impliedProbability: 0.38, poolLamports: 2_400_000_000 },
+      { id: "draw", label: "Draw", impliedProbability: 0.27, poolLamports: 1_100_000_000 },
+      { id: "away", label: "England", impliedProbability: 0.35, poolLamports: 2_600_000_000 },
+    ],
+    proof: {
+      fixtureId: "wc-2026-003",
+      root: "8f3a2b1c9d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0",
+      proof: [
+        "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1",
+        "b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2",
+      ],
+      leaf: "c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3",
+      validatedAt: "2026-07-09T17:45:00Z",
+    },
+  },
+];
+
+export function lamportsToUsdc(lamports: number): string {
+  return (lamports / 1_000_000).toFixed(2);
+}
+
+export function formatKickoff(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}

@@ -1,0 +1,26 @@
+{
+  "name": "txline-predict",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Verifiable World Cup prediction markets powered by TxLINE on Solana",
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/web",
+    "build": "npm run build --workspace=apps/web",
+    "start": "npm run start --workspace=apps/web",
+    "lint": "npm run lint --workspace=apps/web",
+    "anchor:build": "cd programs/predict-market && anchor build",
+    "anchor:test": "cd programs/predict-market && anchor test"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "overrides": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "license": "MIT"
+}
