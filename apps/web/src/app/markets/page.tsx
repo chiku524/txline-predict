@@ -1,4 +1,5 @@
-import { MarketSection } from "@/components/MarketSection";
+import { MarketsBrowser } from "@/components/MarketsBrowser";
+import { OutcomeColorLegend } from "@/components/OutcomeColorLegend";
 import { WorldCupHero } from "@/components/WorldCupHero";
 import { heroCompetitionLabel, partitionByHero } from "@/lib/competitions";
 import { getMarketsGrouped } from "@/lib/markets";
@@ -50,26 +51,14 @@ export default async function MarketsPage() {
         ))}
       </section>
 
-      <MarketSection
-        badge="World Cup"
-        title={`${heroName} markets`}
-        description={
-          isDemoMode()
-            ? "Demo markets — configure TXLINE_API_TOKEN for live auto-generation."
-            : `${grouped.hero.length} markets from live TxLINE fixtures and consensus odds.`
-        }
-        markets={grouped.hero}
+      <MarketsBrowser
+        heroName={heroName}
+        heroMarkets={grouped.hero}
+        otherGroups={grouped.other}
+        demoMode={isDemoMode()}
       />
 
-      {grouped.other.map((group) => (
-        <MarketSection
-          key={group.name}
-          badge="TxLINE"
-          title={group.name}
-          description="Markets built from the same TxLINE odds feed — verifiable on Solana."
-          markets={group.items}
-        />
-      ))}
+      <OutcomeColorLegend />
     </div>
   );
 }

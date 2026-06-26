@@ -91,6 +91,23 @@ export const DEMO_MARKETS: PredictionMarket[] = [
     ],
   },
   {
+    id: "mkt-002b",
+    fixtureId: "wc-2026-002",
+    type: "both_teams_score",
+    title: "Both Teams to Score",
+    competitionId: 500001,
+    competitionName: "FIFA World Cup 2026",
+    homeTeam: "Argentina",
+    awayTeam: "France",
+    kickoffUtc: "2026-07-11T17:00:00Z",
+    status: "locked",
+    totalPoolLamports: 2_200_000_000,
+    outcomes: [
+      { id: "yes", label: "Yes", impliedProbability: 0.58, poolLamports: 1_280_000_000 },
+      { id: "no", label: "No", impliedProbability: 0.42, poolLamports: 920_000_000 },
+    ],
+  },
+  {
     id: "mkt-002",
     fixtureId: "wc-2026-002",
     type: "total_goals",

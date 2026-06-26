@@ -13,11 +13,16 @@ export const runtime = "nodejs";
 const DEMO_MESSAGES: TxLineStreamEvent[] = [
   {
     type: "odds",
+    fixtureId: "wc-2026-001",
     message: "Brazil vs Germany — home implied 42% → 43%",
     at: new Date().toISOString(),
   },
   {
     type: "score",
+    fixtureId: "wc-2026-002",
+    homeScore: 1,
+    awayScore: 1,
+    isLive: true,
     message: "Argentina 1-1 France — GOAL 67'",
     at: new Date().toISOString(),
   },

@@ -21,6 +21,10 @@ export interface TxLineStreamEvent {
   message: string;
   fixtureId?: string;
   at: string;
+  homeScore?: number;
+  awayScore?: number;
+  /** When false, fixture is no longer live (e.g. full-time). */
+  isLive?: boolean;
 }
 
 /** Normalise a TxLINE `data:` JSON payload into a feed event. */
@@ -52,6 +56,9 @@ export function formatStreamPayload(
     if (oddsType === "OVERUNDER_PARTICIPANT_GOALS") {
       detail = `O/U${params} — ${prices || pct}`;
     }
+    if (isBttsType(oddsType)) {
+      detail = `BTTS — ${pct || prices}`;
+    }
 
     return {
       type: "odds",
@@ -64,12 +71,21 @@ export function formatStreamPayload(
   // Scores channel payloads vary; surface key fields when present.
   const score1 = payload.Participant1Score ?? payload.HomeScore;
   const score2 = payload.Participant2Score ?? payload.AwayScore;
+  const eventType = String(payload.EventType ?? payload.eventType ?? "").toLowerCase();
+  const finished =
+    eventType.includes("full") ||
+    eventType.includes("finished") ||
+    eventType.includes("ft");
+
   if (score1 != null && score2 != null) {
     return {
       type: "score",
       fixtureId,
       at,
-      message: `Fixture ${fixtureId}: score ${score1}-${score2}`,
+      homeScore: Number(score1),
+      awayScore: Number(score2),
+      isLive: !finished,
+      message: `Fixture ${fixtureId}: score ${score1}-${score2}${finished ? " (FT)" : ""}`,
     };
   }
 
@@ -87,8 +103,13 @@ export function formatStreamPayload(
     type: "score",
     fixtureId,
     at,
+    isLive: !finished,
     message: `Fixture ${fixtureId}: scores update`,
   };
+}
+
+function isBttsType(oddsType: string): boolean {
+  return /BTTS|BOTH.*SCORE|YESNO.*SCORE/i.test(oddsType);
 }
 
 /** Parse one SSE chunk buffer into completed `data:` events. */

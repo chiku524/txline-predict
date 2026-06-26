@@ -1,5 +1,5 @@
 import type { PredictionMarket, TxLineFixture } from "./types";
-import { parseMatchWinnerOdds, parseTotalGoalsOdds, type TxLineRawOdds } from "./odds";
+import { parseBothTeamsScoreOdds, parseMatchWinnerOdds, parseTotalGoalsOdds, type TxLineRawOdds } from "./odds";
 
 const BASE_POOL_LAMPORTS = 1_000_000_000;
 
@@ -91,6 +91,41 @@ export function buildMarketsForFixture(
           label: "Under 2.5",
           impliedProbability: totalOdds.underImplied,
           poolLamports: underPool,
+        },
+      ],
+    });
+  }
+
+  const bttsOdds = parseBothTeamsScoreOdds(odds);
+  if (bttsOdds) {
+    const [yesPool, noPool] = allocatePool([
+      bttsOdds.yesImplied,
+      bttsOdds.noImplied,
+    ]);
+    markets.push({
+      id: `mkt-${fixture.fixtureId}-btts`,
+      fixtureId: fixture.fixtureId,
+      type: "both_teams_score",
+      title: "Both Teams to Score",
+      competitionId: fixture.competitionId,
+      competitionName: fixture.competitionName,
+      homeTeam: fixture.homeTeam,
+      awayTeam: fixture.awayTeam,
+      kickoffUtc: fixture.kickoffUtc,
+      status,
+      totalPoolLamports: yesPool + noPool,
+      outcomes: [
+        {
+          id: "yes",
+          label: "Yes",
+          impliedProbability: bttsOdds.yesImplied,
+          poolLamports: yesPool,
+        },
+        {
+          id: "no",
+          label: "No",
+          impliedProbability: bttsOdds.noImplied,
+          poolLamports: noPool,
         },
       ],
     });

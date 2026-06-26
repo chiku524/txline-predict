@@ -25,10 +25,17 @@ function MarketStatus({ status }: { status: PredictionMarket["status"] }) {
 function marketTypeLabel(type: PredictionMarket["type"]): string {
   if (type === "match_winner") return "Match winner";
   if (type === "total_goals") return "Total goals";
+  if (type === "both_teams_score") return "Both teams score";
   return type;
 }
 
-export function MarketCard({ market }: { market: PredictionMarket }) {
+export function MarketCard({
+  market,
+  showCompetition = false,
+}: {
+  market: PredictionMarket;
+  showCompetition?: boolean;
+}) {
   const [betOpen, setBetOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
@@ -50,7 +57,14 @@ export function MarketCard({ market }: { market: PredictionMarket }) {
       <article className="market-card">
         <header className="market-card__header">
           <div className="min-w-0 flex-1">
-            <p className="market-card__type">{marketTypeLabel(market.type)}</p>
+            <p className="market-card__type">
+            {marketTypeLabel(market.type)}
+            {showCompetition && market.competitionName && (
+              <span className="market-card__competition">
+                · {market.competitionName}
+              </span>
+            )}
+          </p>
             <h3 className="market-card__title">
               {market.homeTeam} vs {market.awayTeam}
             </h3>

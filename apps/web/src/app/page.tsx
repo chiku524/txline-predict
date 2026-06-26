@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LiveFeed } from "@/components/LiveFeed";
 import { MarketCard } from "@/components/MarketCard";
 import { MarketSection } from "@/components/MarketSection";
+import { OutcomeColorLegend } from "@/components/OutcomeColorLegend";
 import { WorldCupHero } from "@/components/WorldCupHero";
 import {
   heroCompetitionLabel,
@@ -64,6 +65,8 @@ export default async function HomePage() {
         description="Auto-generated from live TxLINE fixtures and consensus odds."
         markets={featured}
       />
+
+      <OutcomeColorLegend compact />
 
       {secondary.length > 0 && (
         <section className="space-y-4">

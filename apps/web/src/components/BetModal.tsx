@@ -45,6 +45,7 @@ interface BetModalProps {
 function marketTypeLabel(type: PredictionMarket["type"]): string {
   if (type === "match_winner") return "Match winner";
   if (type === "total_goals") return "Total goals";
+  if (type === "both_teams_score") return "Both teams score";
   return type;
 }
 

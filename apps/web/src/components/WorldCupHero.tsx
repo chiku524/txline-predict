@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import type { PredictionMarket, TxLineFixture } from "@txline-predict/txline-client";
+import { useTxLineLiveStats } from "@/hooks/useTxLineLiveStats";
 import { countLive, countOpenMarkets } from "@/lib/competitions";
 
 interface WorldCupHeroProps {
@@ -13,9 +16,19 @@ export function WorldCupHero({
   heroFixtures,
   heroMarkets,
 }: WorldCupHeroProps) {
-  const live = countLive(heroFixtures);
+  const initialLive = countLive(heroFixtures);
   const openMarkets = countOpenMarkets(heroMarkets);
   const upcoming = heroFixtures.filter((f) => f.status === "scheduled").length;
+  const heroFixtureIds = heroFixtures.map((f) => f.fixtureId);
+  const initialLiveFixtureIds = heroFixtures
+    .filter((f) => f.status === "live")
+    .map((f) => f.fixtureId);
+
+  const { live, lastUpdate } = useTxLineLiveStats({
+    heroFixtureIds,
+    initialLiveFixtureIds,
+    initialLive,
+  });
 
   return (
     <section className="wc-hero">
@@ -23,7 +36,7 @@ export function WorldCupHero({
       <div className="wc-hero__content">
         <p className="wc-hero__eyebrow">
           <span className="wc-hero__live-dot" aria-hidden />
-          Now live on TxLINE
+          {live > 0 ? "Matches live now" : "Now live on TxLINE"}
         </p>
         <h1 className="wc-hero__title">{competitionName}</h1>
         <p className="wc-hero__subtitle">
@@ -44,6 +57,11 @@ export function WorldCupHero({
             <span className="wc-hero__stat-label">Upcoming</span>
           </div>
         </div>
+        {lastUpdate && (
+          <p className="wc-hero__live-hint">
+            Stats refreshed from TxLINE scores stream
+          </p>
+        )}
         <div className="wc-hero__actions">
           <Link href="/markets" className="wc-hero__cta wc-hero__cta--primary">
             World Cup markets

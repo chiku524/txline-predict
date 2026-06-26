@@ -22,6 +22,11 @@ export interface ParsedTotalOdds {
   underImplied: number;
 }
 
+export interface ParsedBttsOdds {
+  yesImplied: number;
+  noImplied: number;
+}
+
 function pctToProbability(pct: string[] | undefined, index: number): number | undefined {
   const raw = pct?.[index];
   if (!raw || raw === "NA") return undefined;
@@ -96,4 +101,35 @@ export function parseTotalGoalsOdds(
   );
 
   return { line, overImplied: over, underImplied: under };
+}
+
+const BTTS_TYPES = new Set([
+  "YESNO_PARTICIPANT_SCORES",
+  "BTTS_PARTICIPANT_GOALS",
+  "BOTH_PARTICIPANT_SCORE",
+  "BOTH_TEAMS_TO_SCORE",
+]);
+
+function isBttsRow(o: TxLineRawOdds): boolean {
+  const t = o.SuperOddsType ?? "";
+  if (BTTS_TYPES.has(t)) return true;
+  return /BTTS|BOTH.*SCORE/i.test(t);
+}
+
+/** Both teams to score (yes/no) for full match. */
+export function parseBothTeamsScoreOdds(
+  odds: TxLineRawOdds[]
+): ParsedBttsOdds | null {
+  const row = odds.find(
+    (o) =>
+      isBttsRow(o) && (o.MarketPeriod == null || o.MarketPeriod === "")
+  );
+  if (!row) return null;
+
+  const [yes, no] = normalizePair(
+    pctToProbability(row.Pct, 0) ?? priceToImplied(row.Prices?.[0]),
+    pctToProbability(row.Pct, 1) ?? priceToImplied(row.Prices?.[1])
+  );
+
+  return { yesImplied: yes, noImplied: no };
 }
