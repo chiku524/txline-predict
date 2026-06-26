@@ -3,6 +3,7 @@ import {
   buildMarketsFromFixtures,
   fetchOddsForFixtures,
 } from "@txline-predict/txline-client";
+import { groupByCompetition, isHeroCompetition, partitionByHero } from "./competitions";
 import { DEMO_MARKETS } from "./demo-data";
 import { getFixtures, isDemoMode } from "./txline";
 
@@ -24,7 +25,28 @@ export async function getMarkets(): Promise<PredictionMarket[]> {
   }
 }
 
+export async function getMarketsGrouped(): Promise<{
+  hero: PredictionMarket[];
+  other: { name: string; items: PredictionMarket[] }[];
+  all: PredictionMarket[];
+}> {
+  const all = await getMarkets();
+  const { hero, other } = partitionByHero(all);
+  return {
+    all,
+    hero,
+    other: groupByCompetition(other),
+  };
+}
+
 export async function getFeaturedMarkets(limit = 4): Promise<PredictionMarket[]> {
   const markets = await getMarkets();
-  return markets.slice(0, limit);
+  const hero = markets.filter(isHeroCompetition);
+  const pool = hero.length > 0 ? hero : markets;
+  return pool.slice(0, limit);
+}
+
+export async function getSecondaryMarkets(limit = 4): Promise<PredictionMarket[]> {
+  const markets = await getMarkets();
+  return markets.filter((m) => !isHeroCompetition(m)).slice(0, limit);
 }

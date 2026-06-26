@@ -1,13 +1,15 @@
-import { MarketCard } from "@/components/MarketCard";
-import { getMarkets } from "@/lib/markets";
-import { isDemoMode } from "@/lib/txline";
+import { MarketSection } from "@/components/MarketSection";
+import { WorldCupHero } from "@/components/WorldCupHero";
+import { heroCompetitionLabel, partitionByHero } from "@/lib/competitions";
+import { getMarketsGrouped } from "@/lib/markets";
+import { getFixtures, isDemoMode } from "@/lib/txline";
 
 export const dynamic = "force-dynamic";
 
 const STEPS = [
   {
     title: "Pick an outcome",
-    body: "Tap the team or line you believe in. Odds come from live TxLINE consensus.",
+    body: "Tap a team or line — a bet slip modal opens with live odds and match details.",
   },
   {
     title: "Set your stake",
@@ -20,18 +22,21 @@ const STEPS = [
 ] as const;
 
 export default async function MarketsPage() {
-  const markets = await getMarkets();
+  const [fixtures, grouped] = await Promise.all([
+    getFixtures(),
+    getMarketsGrouped(),
+  ]);
+
+  const { hero: heroFixtures } = partitionByHero(fixtures);
+  const heroName = heroCompetitionLabel(fixtures, grouped.all);
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Prediction markets</h1>
-        <p className="mt-2 max-w-2xl text-[var(--muted)]">
-          {isDemoMode()
-            ? "Demo markets — configure TXLINE_API_TOKEN for live auto-generation."
-            : `${markets.length} markets from TxLINE fixtures. Tap an outcome, set your stake, and bet in USDC.`}
-        </p>
-      </div>
+    <div className="space-y-10">
+      <WorldCupHero
+        competitionName={heroName}
+        heroFixtures={heroFixtures}
+        heroMarkets={grouped.hero}
+      />
 
       <section className="how-to-bet" aria-label="How to bet">
         {STEPS.map((s, i) => (
@@ -45,11 +50,26 @@ export default async function MarketsPage() {
         ))}
       </section>
 
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {markets.map((m) => (
-          <MarketCard key={m.id} market={m} />
-        ))}
-      </div>
+      <MarketSection
+        badge="World Cup"
+        title={`${heroName} markets`}
+        description={
+          isDemoMode()
+            ? "Demo markets — configure TXLINE_API_TOKEN for live auto-generation."
+            : `${grouped.hero.length} markets from live TxLINE fixtures and consensus odds.`
+        }
+        markets={grouped.hero}
+      />
+
+      {grouped.other.map((group) => (
+        <MarketSection
+          key={group.name}
+          badge="TxLINE"
+          title={group.name}
+          description="Markets built from the same TxLINE odds feed — verifiable on Solana."
+          markets={group.items}
+        />
+      ))}
     </div>
   );
 }

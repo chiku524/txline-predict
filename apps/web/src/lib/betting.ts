@@ -20,6 +20,15 @@ export function estimateReturn(
   return stakeUsdc * odds;
 }
 
+export function estimateProfit(
+  stakeUsdc: number,
+  impliedProbability?: number
+): number | null {
+  const ret = estimateReturn(stakeUsdc, impliedProbability);
+  if (ret == null) return null;
+  return ret - stakeUsdc;
+}
+
 export function formatUsdc(amount: number): string {
   return amount.toLocaleString(undefined, {
     minimumFractionDigits: 0,

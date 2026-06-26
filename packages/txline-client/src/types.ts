@@ -46,6 +46,8 @@ export interface PredictionMarket {
   fixtureId: string;
   type: MarketType;
   title: string;
+  competitionId: number;
+  competitionName?: string;
   homeTeam: string;
   awayTeam: string;
   kickoffUtc: string;
