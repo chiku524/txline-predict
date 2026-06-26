@@ -1,18 +1,24 @@
 import { MarketCard } from "@/components/MarketCard";
-import { DEMO_MARKETS } from "@/lib/demo-data";
+import { getMarkets } from "@/lib/markets";
+import { isDemoMode } from "@/lib/txline";
 
-export default function MarketsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function MarketsPage() {
+  const markets = await getMarkets();
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Prediction markets</h1>
         <p className="mt-2 text-[var(--muted)]">
-          Auto-generated markets for match winner, totals, and props — resolved
-          trustlessly when TxLINE publishes verified final scores.
+          {isDemoMode()
+            ? "Demo markets — configure TXLINE_API_TOKEN for live auto-generation."
+            : `${markets.length} markets auto-generated from TxLINE fixtures and consensus odds.`}
         </p>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {DEMO_MARKETS.map((m) => (
+        {markets.map((m) => (
           <MarketCard key={m.id} market={m} />
         ))}
       </div>

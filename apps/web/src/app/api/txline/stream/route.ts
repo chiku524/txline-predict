@@ -1,8 +1,8 @@
-import { getStreamEndpoints } from "@txline-predict/txline-client";
+import { buildAuthHeaders, getStreamEndpoints } from "@txline-predict/txline-client";
 
 export const dynamic = "force-dynamic";
 
-/** Proxies TxLINE data to the browser as SSE (keeps API token server-side). */
+/** Proxies TxLINE odds stream to the browser (keeps tokens server-side). */
 export async function GET() {
   const apiToken = process.env.TXLINE_API_TOKEN;
   const useDemo = process.env.NEXT_PUBLIC_USE_DEMO_DATA === "true" || !apiToken;
@@ -29,13 +29,17 @@ export async function GET() {
         }
 
         try {
-          const { oddsSnapshot } = getStreamEndpoints({ apiToken, useDevnet: false });
-          const res = await fetch(oddsSnapshot, {
-            headers: { Authorization: `Bearer ${apiToken}` },
+          const { fixturesSnapshot } = getStreamEndpoints({ apiToken, useDevnet: false });
+          const res = await fetch(fixturesSnapshot, {
+            headers: await buildAuthHeaders({ apiToken }),
           });
           if (res.ok) {
-            const snippet = (await res.text()).slice(0, 180);
-            send({ type: "odds", message: snippet || "TxLINE odds update" });
+            const data = await res.json();
+            const first = Array.isArray(data) ? data[0] : null;
+            const msg = first
+              ? `${first.Participant1} vs ${first.Participant2} (${first.Competition})`
+              : "TxLINE fixtures update";
+            send({ type: "odds", message: msg });
           }
         } catch {
           send({ type: "status", message: "TxLINE poll failed — retrying" });

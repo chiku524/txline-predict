@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { fetchScoresSnapshot } from "@txline-predict/txline-client";
+import { fetchFixturesSnapshot } from "@txline-predict/txline-client";
 import { DEMO_FIXTURES } from "@/lib/demo-data";
 
 export async function GET() {
@@ -11,7 +11,7 @@ export async function GET() {
   }
 
   try {
-    const data = await fetchScoresSnapshot({ apiToken });
+    const data = await fetchFixturesSnapshot({ apiToken });
     return NextResponse.json({ data, source: "txline" });
   } catch (err) {
     return NextResponse.json(

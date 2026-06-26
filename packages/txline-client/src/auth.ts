@@ -1,4 +1,4 @@
-import { TXLINE_MAINNET_API } from "./config";
+import { TXLINE_MAINNET_API, TXLINE_DEV_API } from "./config";
 
 export interface GuestAuthResponse {
   token: string;
@@ -11,11 +11,10 @@ export interface TokenActivationParams {
   guestJwt: string;
 }
 
-/** Start guest session — first step before on-chain subscribe + activation. */
-export async function startGuestSession(): Promise<GuestAuthResponse> {
-  const res = await fetch(`${TXLINE_MAINNET_API}/auth/guest/start`, {
-    method: "POST",
-  });
+/** Start guest session — required alongside X-Api-Token on data requests. */
+export async function startGuestSession(useDevnet = false): Promise<GuestAuthResponse> {
+  const base = useDevnet ? TXLINE_DEV_API : TXLINE_MAINNET_API;
+  const res = await fetch(`${base}/auth/guest/start`, { method: "POST" });
   if (!res.ok) {
     throw new Error(`Guest auth failed: ${res.status} ${res.statusText}`);
   }

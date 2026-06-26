@@ -1,6 +1,7 @@
+import { startGuestSession } from "./auth";
+
 export const TXLINE_MAINNET_API = "https://txline.txodds.com";
-export const TXLINE_ORACLE_API = "https://oracle.txodds.com/api";
-export const TXLINE_DEV_ORACLE_API = "https://oracle-dev.txodds.com/api";
+export const TXLINE_DEV_API = "https://txline-dev.txodds.com";
 
 export const TXLINE_PROGRAM_MAINNET = "9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA";
 export const TXLINE_PROGRAM_DEVNET = "6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J";
@@ -12,6 +13,18 @@ export interface TxLineClientConfig {
   useDevnet?: boolean;
 }
 
-export function getOracleBaseUrl(useDevnet = false): string {
-  return useDevnet ? TXLINE_DEV_ORACLE_API : TXLINE_ORACLE_API;
+export function getApiBaseUrl(useDevnet = false): string {
+  return useDevnet ? TXLINE_DEV_API : TXLINE_MAINNET_API;
+}
+
+/** TxLINE requires guest JWT + X-Api-Token for subscribed data endpoints. */
+export async function buildAuthHeaders(
+  config: TxLineClientConfig
+): Promise<HeadersInit> {
+  const { token: jwt } = await startGuestSession(config.useDevnet);
+  return {
+    Authorization: `Bearer ${jwt}`,
+    "X-Api-Token": config.apiToken,
+    Accept: "application/json",
+  };
 }

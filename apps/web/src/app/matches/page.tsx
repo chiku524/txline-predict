@@ -2,6 +2,8 @@ import { MatchCard } from "@/components/MatchCard";
 import { LiveFeed } from "@/components/LiveFeed";
 import { getFixtures, isDemoMode } from "@/lib/txline";
 
+export const dynamic = "force-dynamic";
+
 export default async function MatchesPage() {
   const fixtures = await getFixtures();
 

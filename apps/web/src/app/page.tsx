@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { LiveFeed } from "@/components/LiveFeed";
 import { MarketCard } from "@/components/MarketCard";
-import { DEMO_MARKETS } from "@/lib/demo-data";
+import { getFeaturedMarkets } from "@/lib/markets";
 
-export default function HomePage() {
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const featured = await getFeaturedMarkets(4);
   return (
     <div className="space-y-12">
       <section className="py-8 text-center">
@@ -59,7 +62,7 @@ export default function HomePage() {
         <div className="lg:col-span-2">
           <h2 className="mb-4 text-xl font-bold">Featured markets</h2>
           <div className="grid gap-4 md:grid-cols-2">
-            {DEMO_MARKETS.slice(0, 2).map((m) => (
+            {featured.slice(0, 2).map((m) => (
               <MarketCard key={m.id} market={m} />
             ))}
           </div>
