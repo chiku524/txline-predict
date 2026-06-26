@@ -9,7 +9,10 @@
     "start": "npm run start --workspace=apps/web",
     "lint": "npm run lint --workspace=apps/web",
     "anchor:build": "cd programs/predict-market && anchor build",
-    "anchor:test": "cd programs/predict-market && anchor test"
+    "anchor:test": "cd programs/predict-market && anchor test",
+    "wallet:generate": "tsx scripts/generate-platform-wallet.ts",
+    "txline:setup": "tsx scripts/setup-txline-access.ts",
+    "txline:setup:devnet": "cross-env TXLINE_USE_DEVNET=true tsx scripts/setup-txline-access.ts"
   },
   "workspaces": [
     "apps/*",
@@ -21,6 +24,16 @@
   "overrides": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@coral-xyz/anchor": "^0.31.1",
+    "@solana/spl-token": "^0.4.13",
+    "@solana/web3.js": "^1.98.2",
+    "axios": "^1.9.0",
+    "cross-env": "^7.0.3",
+    "tsx": "^4.19.4",
+    "tweetnacl": "^1.0.3",
+    "typescript": "^5.8.3"
   },
   "license": "MIT"
 }

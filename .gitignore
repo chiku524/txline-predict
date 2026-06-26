@@ -20,6 +20,8 @@ target/
 test-ledger/
 **/*.so
 **/keypair.json
+platform/platform-wallet.json
+platform/credentials.json
 
 # IDE
 .idea/

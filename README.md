@@ -29,9 +29,21 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ### TxLINE API access
 
-1. Subscribe to the [free World Cup tier](https://txline.txodds.com/documentation/worldcup) on Solana mainnet (service level 1 or 12).
-2. Activate your API token via `/api/token/activate`.
-3. Set `TXLINE_API_TOKEN` in `apps/web/.env.local` and `NEXT_PUBLIC_USE_DEMO_DATA=false`.
+Automated setup (platform wallet + on-chain subscribe + token activation):
+
+```bash
+# 1. Generate platform wallet (once)
+npm run wallet:generate
+
+# 2. Fund the printed address with ≥ 0.01 SOL on mainnet
+
+# 3. Subscribe to free World Cup tier and activate API token
+npm run txline:setup
+```
+
+This writes `apps/web/.env.local` and `platform/credentials.json` (both gitignored).
+
+Manual steps: see [platform/README.md](platform/README.md) and the [World Cup free tier docs](https://txline.txodds.com/documentation/worldcup).
 
 ## Project structure
 
