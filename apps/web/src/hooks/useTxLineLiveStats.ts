@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTxLineStream } from "@/hooks/TxLineStreamProvider";
 
 interface LiveStats {
   live: number;
@@ -18,6 +19,7 @@ export function useTxLineLiveStats({
   initialLiveFixtureIds,
   initialLive,
 }: UseTxLineLiveStatsOptions): LiveStats {
+  const { subscribe } = useTxLineStream();
   const [liveIds, setLiveIds] = useState<Set<string>>(
     () => new Set(initialLiveFixtureIds)
   );
@@ -31,35 +33,22 @@ export function useTxLineLiveStats({
     const heroSet = new Set(heroFixtureIds);
     if (heroSet.size === 0) return;
 
-    const es = new EventSource("/api/txline/stream");
+    return subscribe((data) => {
+      if (data.type !== "score" || !data.fixtureId) return;
+      if (!heroSet.has(data.fixtureId)) return;
 
-    es.onmessage = (e) => {
-      try {
-        const data = JSON.parse(e.data) as {
-          type?: string;
-          fixtureId?: string;
-          isLive?: boolean;
-        };
-        if (data.type !== "score" || !data.fixtureId) return;
-        if (!heroSet.has(data.fixtureId)) return;
-
-        setLiveIds((prev) => {
-          const next = new Set(prev);
-          if (data.isLive === false) {
-            next.delete(data.fixtureId!);
-          } else {
-            next.add(data.fixtureId!);
-          }
-          return next;
-        });
-        setLastUpdate(new Date().toISOString());
-      } catch {
-        /* ignore */
-      }
-    };
-
-    return () => es.close();
-  }, [heroFixtureIds.join(",")]);
+      setLiveIds((prev) => {
+        const next = new Set(prev);
+        if (data.isLive === false) {
+          next.delete(data.fixtureId!);
+        } else {
+          next.add(data.fixtureId!);
+        }
+        return next;
+      });
+      setLastUpdate(new Date().toISOString());
+    });
+  }, [heroFixtureIds.join(","), subscribe]);
 
   const sseLive = liveIds.size;
   const live = Math.max(initialLive, sseLive);

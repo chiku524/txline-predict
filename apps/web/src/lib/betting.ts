@@ -10,6 +10,34 @@ export function formatOdds(impliedProbability?: number): string {
   return odds >= 10 ? odds.toFixed(1) : odds.toFixed(2);
 }
 
+/** Parimutuel gross return if this outcome wins (stake + share of losing side). */
+export function estimateParimutuelReturn(
+  stakeLamports: number,
+  outcomePoolLamports: number,
+  totalPoolLamports: number
+): number | null {
+  if (stakeLamports <= 0) return null;
+  const newTotal = totalPoolLamports + stakeLamports;
+  const newOutcomePool = outcomePoolLamports + stakeLamports;
+  if (newOutcomePool <= 0) return null;
+  const payoutLamports = (stakeLamports * newTotal) / newOutcomePool;
+  return payoutLamports / 1_000_000;
+}
+
+export function estimateParimutuelProfit(
+  stakeLamports: number,
+  outcomePoolLamports: number,
+  totalPoolLamports: number
+): number | null {
+  const ret = estimateParimutuelReturn(
+    stakeLamports,
+    outcomePoolLamports,
+    totalPoolLamports
+  );
+  if (ret == null) return null;
+  return ret - stakeLamports / 1_000_000;
+}
+
 /** Fair-odds estimate of gross return on a winning bet (not parimutuel). */
 export function estimateReturn(
   stakeUsdc: number,

@@ -5,7 +5,7 @@ import { heroCompetitionLabel, partitionByHero } from "@/lib/competitions";
 import { getMarketsGrouped } from "@/lib/markets";
 import { getFixtures, isDemoMode } from "@/lib/txline";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 const STEPS = [
   {

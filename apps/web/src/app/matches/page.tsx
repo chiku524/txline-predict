@@ -10,7 +10,7 @@ import {
 import { getMarkets } from "@/lib/markets";
 import { getFixtures, isDemoMode } from "@/lib/txline";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function MatchesPage() {
   const [fixtures, markets] = await Promise.all([getFixtures(), getMarkets()]);

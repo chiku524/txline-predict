@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { PredictionMarket } from "@txline-predict/txline-client";
 import {
   buildMarketsFromFixtures,
@@ -9,7 +10,7 @@ import { getFixtures, isDemoMode } from "./txline";
 
 const apiToken = process.env.TXLINE_API_TOKEN ?? "";
 
-export async function getMarkets(): Promise<PredictionMarket[]> {
+export const getMarkets = cache(async (): Promise<PredictionMarket[]> => {
   if (isDemoMode()) return DEMO_MARKETS;
 
   try {
@@ -23,7 +24,7 @@ export async function getMarkets(): Promise<PredictionMarket[]> {
   } catch {
     return DEMO_MARKETS;
   }
-}
+});
 
 export async function getMarketsGrouped(): Promise<{
   hero: PredictionMarket[];

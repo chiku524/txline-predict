@@ -57,7 +57,17 @@ Base URLs:
 On-chain:
 - Mainnet program: `9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA`
 - Devnet program: `6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J`
-- Settlement: CPI to `validate_stat` with scores Merkle proof
+- Settlement: permissionless `settle_market` CPI to `validate_stat` with scores Merkle proof
+- Claims: `claim` transfers parimutuel share from vault to winning `Position` holders
+
+### Settlement flow
+
+1. Match finishes — TxLINE scores snapshot updates fixture status.
+2. Keeper (any wallet) calls `GET /api/txline/settlement?fixtureId=&marketType=` to fetch stat-validation payload + winning outcome.
+3. `settle_market` CPIs into TxLINE `validate_stat`, verifies scores, stores settlement root, marks market resolved.
+4. Winners call `claim` to withdraw USDC proportional to their stake in the winning outcome pool.
+
+Demo/dev fallback: empty Merkle proof path requires the market authority signer (devnet testing without live oracle proofs).
 
 ## Hackathon feedback (fill before submission)
 

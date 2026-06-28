@@ -1,5 +1,5 @@
 import type { TxLineFixture } from "@txline-predict/txline-client";
-import { formatKickoff } from "@/lib/demo-data";
+import { formatKickoff } from "@/lib/betting";
 
 function StatusBadge({ status }: { status: TxLineFixture["status"] }) {
   if (status === "live") {

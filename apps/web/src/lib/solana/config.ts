@@ -1,3 +1,4 @@
+import type { MarketType } from "@txline-predict/txline-client";
 import { PublicKey } from "@solana/web3.js";
 
 export const PREDICT_MARKET_PROGRAM_ID = new PublicKey(
@@ -30,9 +31,54 @@ export function parseUsdcAmount(input: string): number {
   return Number(whole) * 1_000_000 + Number(padded);
 }
 
-export function getMarketPda(fixtureId: string): [PublicKey, number] {
+export function getPositionPda(
+  marketPda: PublicKey,
+  depositor: PublicKey,
+  outcomeIndex: number
+): [PublicKey, number] {
   return PublicKey.findProgramAddressSync(
-    [Buffer.from("market"), Buffer.from(fixtureId)],
+    [
+      Buffer.from("position"),
+      marketPda.toBuffer(),
+      depositor.toBuffer(),
+      Buffer.from([outcomeIndex]),
+    ],
+    PREDICT_MARKET_PROGRAM_ID
+  );
+}
+
+export function getTxLineProgramId(network?: string): PublicKey {
+  const useDevnet = network !== "mainnet-beta";
+  return new PublicKey(
+    useDevnet
+      ? "6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J"
+      : "9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA"
+  );
+}
+
+export function getDailyScoresMerkleRootsPda(
+  network?: string,
+  epochDay = Math.floor(Date.now() / (24 * 60 * 60 * 1000))
+): [PublicKey, number] {
+  const programId = getTxLineProgramId(network);
+  const dayBuf = Buffer.alloc(2);
+  dayBuf.writeUInt16LE(epochDay, 0);
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("daily_scores_roots"), dayBuf],
+    programId
+  );
+}
+export function marketChainId(fixtureId: string, marketType: MarketType): string {
+  return `${fixtureId}:${marketType}`;
+}
+
+export function getMarketPda(
+  fixtureId: string,
+  marketType: MarketType
+): [PublicKey, number] {
+  const chainId = marketChainId(fixtureId, marketType);
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("market"), Buffer.from(chainId)],
     PREDICT_MARKET_PROGRAM_ID
   );
 }

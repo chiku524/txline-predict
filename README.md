@@ -10,7 +10,7 @@ Stake USDC in peer-to-peer pools, watch live match data from TxLINE SSE streams,
 - **Auto-generated markets** — match winner, totals, and prop bets across the tournament
 - **SSE live feed** — real-time odds and score updates proxied through Next.js API routes
 - **Verifiable resolution UI** — display TxLINE Merkle proof receipts on settled markets
-- **Anchor escrow program** — USDC pools with CPI settlement into TxLINE `validate_stat` (WIP)
+- **Anchor escrow program** — USDC pools, Position accounts, `claim` payouts, and CPI settlement into TxLINE `validate_stat`
 
 ## Quick start
 
@@ -65,11 +65,11 @@ txline-predict/
 | `GET /api/guest/odds/stream` | SSE live odds feed |
 | `GET /api/guest/scores/snapshot` | Match scores and events |
 | `GET /api/guest/scores/stream` | SSE live scores feed |
-| TxLINE `validate_stat` CPI | On-chain settlement verification (program WIP) |
+| TxLINE `validate_stat` CPI | On-chain settlement verification via permissionless `settle_market` |
 
 ## Smart contract (devnet)
 
-USDC escrow program: `programs/predict-market` — create market vault, deposit per outcome, settle via TxLINE CPI (WIP).
+USDC escrow program: `programs/predict-market` — create market vault, deposit per outcome (Position PDAs), settle via TxLINE CPI, claim parimutuel winnings.
 
 ```bash
 anchor build && anchor deploy --provider.cluster devnet

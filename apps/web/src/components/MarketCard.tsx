@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { PredictionMarket } from "@txline-predict/txline-client";
 import { BetModal } from "@/components/BetModal";
+import { MarketActions } from "@/components/MarketActions";
 import { lamportsToUsdc } from "@/lib/demo-data";
 import {
   formatKickoff,
@@ -149,8 +150,15 @@ export function MarketCard({
             <div className="mt-1 break-all font-mono text-[var(--muted)]">
               root: {market.proof.root.slice(0, 24)}…
             </div>
+            {market.proof.validatedAt && (
+              <div className="mt-1 text-[10px] text-[var(--muted)]">
+                Validated {new Date(market.proof.validatedAt).toLocaleString()}
+              </div>
+            )}
           </div>
         )}
+
+        <MarketActions market={market} />
       </article>
 
       {selectedIndex != null && (

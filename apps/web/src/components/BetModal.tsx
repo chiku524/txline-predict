@@ -16,8 +16,8 @@ import { Modal } from "@/components/Modal";
 import { useUsdcBalance } from "@/hooks/useUsdcBalance";
 import {
   QUICK_STAKES,
-  estimateProfit,
-  estimateReturn,
+  estimateParimutuelProfit,
+  estimateParimutuelReturn,
   explorerTxUrl,
   formatKickoff,
   formatOdds,
@@ -26,10 +26,13 @@ import {
 import { lamportsToUsdc } from "@/lib/demo-data";
 import {
   getMarketPda,
+  getPositionPda,
   getUsdcMint,
+  marketChainId,
   parseUsdcAmount,
   USDC_DECIMALS,
 } from "@/lib/solana/config";
+import { fetchOnChainMarket } from "@/lib/solana/market";
 import { getPredictMarketProgram } from "@/lib/solana/program";
 import { outcomeToneClass } from "@/lib/outcome-colors";
 
@@ -65,6 +68,10 @@ export function BetModal({
   const [step, setStep] = useState<BetStep>("idle");
   const [error, setError] = useState<string | null>(null);
   const [txSig, setTxSig] = useState<string | null>(null);
+  const [chainPools, setChainPools] = useState<{
+    total: number;
+    outcome: number;
+  } | null>(null);
 
   const network = process.env.NEXT_PUBLIC_SOLANA_NETWORK ?? "devnet";
   const usdcMint = getUsdcMint(network);
@@ -75,16 +82,31 @@ export function BetModal({
     return Number.isFinite(n) && n > 0 ? n : 0;
   }, [amount]);
 
+  const stakeLamports = useMemo(() => parseUsdcAmount(amount), [amount]);
+
+  const displayTotalPool =
+    chainPools?.total ?? market.totalPoolLamports;
+  const displayOutcomePool =
+    chainPools?.outcome ??
+    (outcome?.poolLamports ?? 0);
+
   const implied = outcome?.impliedProbability;
-  const potentialReturn = estimateReturn(stake, implied);
-  const potentialProfit = estimateProfit(stake, implied);
+  const potentialReturn = estimateParimutuelReturn(
+    stakeLamports,
+    displayOutcomePool,
+    displayTotalPool
+  );
+  const potentialProfit = estimateParimutuelProfit(
+    stakeLamports,
+    displayOutcomePool,
+    displayTotalPool
+  );
   const oddsLabel = formatOdds(implied);
   const poolPct =
-    market.totalPoolLamports > 0
-      ? Math.round(
-          (outcome.poolLamports / market.totalPoolLamports) * 100
-        )
+    displayTotalPool > 0
+      ? Math.round((displayOutcomePool / displayTotalPool) * 100)
       : 0;
+  const usingChainPools = chainPools != null && chainPools.total > 0;
 
   const insufficientBalance =
     balance != null && stake > 0 && stake > balance;
@@ -98,8 +120,34 @@ export function BetModal({
       setStep("idle");
       setError(null);
       setTxSig(null);
+      setChainPools(null);
     }
   }, [open, outcomeIndex]);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+
+    void fetchOnChainMarket(connection, market.fixtureId, market.type).then(
+      (state) => {
+        if (cancelled || !state.exists) return;
+        setChainPools({
+          total: state.totalDeposited,
+          outcome: state.outcomePools[outcomeIndex] ?? 0,
+        });
+      }
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    connection,
+    market.fixtureId,
+    market.type,
+    open,
+    outcomeIndex,
+  ]);
 
   const handleClose = useCallback(() => {
     if (busy) return;
@@ -137,7 +185,8 @@ export function BetModal({
       };
 
       const program = getPredictMarketProgram(connection, anchorWallet);
-      const [marketPda] = getMarketPda(market.fixtureId);
+      const chainId = marketChainId(market.fixtureId, market.type);
+      const [marketPda] = getMarketPda(market.fixtureId, market.type);
       const vault = getAssociatedTokenAddressSync(usdcMint, marketPda, true);
       const depositorAta = getAssociatedTokenAddressSync(
         usdcMint,
@@ -149,7 +198,7 @@ export function BetModal({
 
       if (!marketAccount) {
         await program.methods
-          .createMarket(market.fixtureId, market.outcomes.length, new BN(lockTs))
+          .createMarket(chainId, market.outcomes.length, new BN(lockTs))
           .accounts({
             authority: wallet.publicKey,
             market: marketPda,
@@ -185,14 +234,21 @@ export function BetModal({
       }
 
       setStep("deposit");
+      const [positionPda] = getPositionPda(
+        marketPda,
+        wallet.publicKey,
+        outcomeIndex
+      );
       const sig = await program.methods
         .deposit(outcomeIndex, new BN(lamports))
         .accounts({
           depositor: wallet.publicKey,
           market: marketPda,
+          position: positionPda,
           depositorTokenAccount: depositorAta,
           vault,
           tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
         })
         .rpc();
 
@@ -223,6 +279,7 @@ export function BetModal({
     market.fixtureId,
     market.kickoffUtc,
     market.outcomes.length,
+    market.type,
     outcome,
     outcomeIndex,
     refresh,
@@ -314,9 +371,11 @@ export function BetModal({
 
           <div className="bet-modal-stats">
             <div className="bet-modal-stat">
-              <span className="bet-modal-stat__label">Market pool</span>
+              <span className="bet-modal-stat__label">
+                {usingChainPools ? "On-chain pool" : "Market pool"}
+              </span>
               <span className="bet-modal-stat__value">
-                {formatUsdc(Number(lamportsToUsdc(market.totalPoolLamports)))}{" "}
+                {formatUsdc(Number(lamportsToUsdc(displayTotalPool)))}{" "}
                 USDC
               </span>
             </div>
@@ -389,6 +448,10 @@ export function BetModal({
                 </span>
               </div>
             )}
+            <div className="bet-panel__summary-row bet-panel__summary-row--muted">
+              <span>Payout model</span>
+              <span>Parimutuel pool share</span>
+            </div>
             {wallet.publicKey && balance != null ? (
               <div className="bet-panel__summary-row bet-panel__summary-row--muted">
                 <span>Wallet balance</span>

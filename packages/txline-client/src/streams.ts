@@ -79,20 +79,43 @@ export async function fetchOddsForFixture(
   return Array.isArray(data) ? data : [];
 }
 
-/** Fetch odds for many fixtures in parallel. */
+function groupOddsSnapshot(data: unknown): Map<string, TxLineRawOdds[]> {
+  const map = new Map<string, TxLineRawOdds[]>();
+  const rows = Array.isArray(data) ? (data as TxLineRawOdds[]) : [];
+  for (const row of rows) {
+    const id = row.FixtureId != null ? String(row.FixtureId) : "";
+    if (!id) continue;
+    const existing = map.get(id) ?? [];
+    existing.push(row);
+    map.set(id, existing);
+  }
+  return map;
+}
+
+/** Fetch odds for many fixtures — prefers a single bulk snapshot over N requests. */
 export async function fetchOddsForFixtures(
   config: TxLineClientConfig,
   fixtureIds: string[]
 ): Promise<Map<string, TxLineRawOdds[]>> {
-  const entries = await Promise.all(
-    fixtureIds.map(async (id) => {
-      try {
-        const odds = await fetchOddsForFixture(config, id);
-        return [id, odds] as const;
-      } catch {
-        return [id, [] as TxLineRawOdds[]] as const;
-      }
-    })
-  );
-  return new Map(entries);
+  if (fixtureIds.length === 0) return new Map();
+
+  try {
+    const snapshot = await fetchOddsSnapshot(config);
+    const grouped = groupOddsSnapshot(snapshot);
+    return new Map(
+      fixtureIds.map((id) => [id, grouped.get(id) ?? []] as const)
+    );
+  } catch {
+    const entries = await Promise.all(
+      fixtureIds.map(async (id) => {
+        try {
+          const odds = await fetchOddsForFixture(config, id);
+          return [id, odds] as const;
+        } catch {
+          return [id, [] as TxLineRawOdds[]] as const;
+        }
+      })
+    );
+    return new Map(entries);
+  }
 }

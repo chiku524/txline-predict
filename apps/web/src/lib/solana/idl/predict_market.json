@@ -2,9 +2,9 @@
   "address": "47BEuEzRc1Aj6QAZvYkuebLSqGRAcKnLs8HLuW8Gc5e3",
   "metadata": {
     "name": "predict_market",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "spec": "0.1.0",
-    "description": "USDC escrow prediction pools with TxLINE settlement"
+    "description": "USDC escrow prediction pools with TxLINE CPI settlement"
   },
   "instructions": [
     {
@@ -31,9 +31,11 @@
       "accounts": [
         { "name": "depositor", "writable": true, "signer": true },
         { "name": "market", "writable": true, "signer": false },
+        { "name": "position", "writable": true, "signer": false },
         { "name": "depositor_token_account", "writable": true, "signer": false },
         { "name": "vault", "writable": true, "signer": false },
-        { "name": "token_program", "writable": false, "signer": false }
+        { "name": "token_program", "writable": false, "signer": false },
+        { "name": "system_program", "writable": false, "signer": false }
       ],
       "args": [
         { "name": "outcome_index", "type": "u8" },
@@ -46,18 +48,45 @@
       "accounts": [
         { "name": "keeper", "writable": false, "signer": true },
         { "name": "market", "writable": true, "signer": false },
+        { "name": "daily_scores_merkle_roots", "writable": false, "signer": false },
         { "name": "txline_program", "writable": false, "signer": false }
       ],
       "args": [
         { "name": "winning_outcome", "type": "u8" },
-        { "name": "proof", "type": { "vec": { "array": ["u8", 32] } } }
+        { "name": "ts", "type": "i64" },
+        { "name": "fixture_summary", "type": { "defined": { "name": "ScoresBatchSummary" } } },
+        { "name": "fixture_proof", "type": { "vec": { "defined": { "name": "ProofNode" } } } },
+        { "name": "main_tree_proof", "type": { "vec": { "defined": { "name": "ProofNode" } } } },
+        { "name": "predicate", "type": { "defined": { "name": "TraderPredicate" } } },
+        { "name": "stat_a", "type": { "defined": { "name": "StatTerm" } } },
+        { "name": "stat_b", "type": { "option": { "defined": { "name": "StatTerm" } } } },
+        { "name": "op", "type": { "option": { "defined": { "name": "BinaryExpression" } } } },
+        { "name": "home_score", "type": "i32" },
+        { "name": "away_score", "type": "i32" }
       ]
+    },
+    {
+      "name": "claim",
+      "discriminator": [62, 198, 214, 193, 213, 159, 108, 210],
+      "accounts": [
+        { "name": "depositor", "writable": true, "signer": true },
+        { "name": "position", "writable": true, "signer": false },
+        { "name": "market", "writable": false, "signer": false },
+        { "name": "vault", "writable": true, "signer": false },
+        { "name": "depositor_token_account", "writable": true, "signer": false },
+        { "name": "token_program", "writable": false, "signer": false }
+      ],
+      "args": []
     }
   ],
   "accounts": [
     {
       "name": "Market",
       "discriminator": [219, 190, 213, 55, 0, 227, 198, 154]
+    },
+    {
+      "name": "Position",
+      "discriminator": [170, 188, 143, 228, 122, 64, 247, 208]
     }
   ],
   "types": [
@@ -75,6 +104,21 @@
           { "name": "total_deposited", "type": "u64" },
           { "name": "outcome_pools", "type": { "array": ["u64", 8] } },
           { "name": "winning_outcome", "type": { "option": "u8" } },
+          { "name": "settlement_root", "type": { "option": { "array": ["u8", 32] } } },
+          { "name": "bump", "type": "u8" }
+        ]
+      }
+    },
+    {
+      "name": "Position",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "market", "type": "pubkey" },
+          { "name": "depositor", "type": "pubkey" },
+          { "name": "outcome_index", "type": "u8" },
+          { "name": "amount", "type": "u64" },
+          { "name": "claimed", "type": "bool" },
           { "name": "bump", "type": "u8" }
         ]
       }
@@ -89,6 +133,88 @@
           { "name": "Resolved" },
           { "name": "Cancelled" }
         ]
+      }
+    },
+    {
+      "name": "ProofNode",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "hash", "type": { "array": ["u8", 32] } },
+          { "name": "is_right_sibling", "type": "bool" }
+        ]
+      }
+    },
+    {
+      "name": "ScoresUpdateStats",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "update_count", "type": "i32" },
+          { "name": "min_timestamp", "type": "i64" },
+          { "name": "max_timestamp", "type": "i64" }
+        ]
+      }
+    },
+    {
+      "name": "ScoresBatchSummary",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "fixture_id", "type": "i64" },
+          { "name": "update_stats", "type": { "defined": { "name": "ScoresUpdateStats" } } },
+          { "name": "events_sub_tree_root", "type": { "array": ["u8", 32] } }
+        ]
+      }
+    },
+    {
+      "name": "ScoreStat",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "key", "type": "u32" },
+          { "name": "value", "type": "i32" },
+          { "name": "period", "type": "i32" }
+        ]
+      }
+    },
+    {
+      "name": "StatTerm",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "stat_to_prove", "type": { "defined": { "name": "ScoreStat" } } },
+          { "name": "event_stat_root", "type": { "array": ["u8", 32] } },
+          { "name": "stat_proof", "type": { "vec": { "defined": { "name": "ProofNode" } } } }
+        ]
+      }
+    },
+    {
+      "name": "Comparison",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          { "name": "GreaterThan" },
+          { "name": "LessThan" },
+          { "name": "EqualTo" }
+        ]
+      }
+    },
+    {
+      "name": "TraderPredicate",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "threshold", "type": "i32" },
+          { "name": "comparison", "type": { "defined": { "name": "Comparison" } } }
+        ]
+      }
+    },
+    {
+      "name": "BinaryExpression",
+      "type": {
+        "kind": "enum",
+        "variants": [{ "name": "Add" }, { "name": "Subtract" }]
       }
     }
   ]

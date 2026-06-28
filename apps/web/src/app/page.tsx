@@ -15,7 +15,7 @@ import {
 } from "@/lib/markets";
 import { getFixtures } from "@/lib/txline";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function HomePage() {
   const [fixtures, featured, secondary, allMarkets] = await Promise.all([

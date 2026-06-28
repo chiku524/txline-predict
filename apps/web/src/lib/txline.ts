@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { TxLineFixture } from "@txline-predict/txline-client";
 import {
   fetchFixturesSnapshot,
@@ -10,7 +11,7 @@ import { DEMO_FIXTURES } from "./demo-data";
 const useDemo = process.env.NEXT_PUBLIC_USE_DEMO_DATA === "true";
 const apiToken = process.env.TXLINE_API_TOKEN ?? "";
 
-export async function getFixtures(): Promise<TxLineFixture[]> {
+export const getFixtures = cache(async (): Promise<TxLineFixture[]> => {
   if (useDemo || !apiToken) return DEMO_FIXTURES;
   try {
     const [fixturesRaw, scoresRaw] = await Promise.all([
@@ -26,7 +27,7 @@ export async function getFixtures(): Promise<TxLineFixture[]> {
   } catch {
     return DEMO_FIXTURES;
   }
-}
+});
 
 export function isDemoMode(): boolean {
   return useDemo || !apiToken;

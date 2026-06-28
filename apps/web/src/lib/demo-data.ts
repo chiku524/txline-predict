@@ -194,13 +194,3 @@ export const DEMO_MARKETS: PredictionMarket[] = [
 export function lamportsToUsdc(lamports: number): string {
   return (lamports / 1_000_000).toFixed(2);
 }
-
-export function formatKickoff(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}

@@ -1,23 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-interface FeedEvent {
-  id: string;
-  type: "score" | "odds" | "status";
-  message: string;
-  fixtureId?: string;
-  at: string;
-}
-
-const FALLBACK: FeedEvent[] = [
-  {
-    id: "boot",
-    type: "status",
-    message: "Connecting to TxLINE…",
-    at: new Date().toISOString(),
-  },
-];
+import { useTxLineStream } from "@/hooks/TxLineStreamProvider";
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString(undefined, {
@@ -28,35 +11,7 @@ function formatTime(iso: string): string {
 }
 
 export function LiveFeed() {
-  const [events, setEvents] = useState<FeedEvent[]>(FALLBACK);
-  const [connected, setConnected] = useState(false);
-
-  useEffect(() => {
-    const es = new EventSource("/api/txline/stream");
-
-    es.onopen = () => setConnected(true);
-
-    es.onmessage = (e) => {
-      try {
-        const data = JSON.parse(e.data) as Omit<FeedEvent, "id">;
-        setEvents((prev) => [
-          {
-            id: crypto.randomUUID(),
-            type: data.type ?? "status",
-            message: data.message,
-            fixtureId: data.fixtureId,
-            at: data.at ?? new Date().toISOString(),
-          },
-          ...prev.slice(0, 24),
-        ]);
-      } catch {
-        /* ignore */
-      }
-    };
-
-    es.onerror = () => setConnected(false);
-    return () => es.close();
-  }, []);
+  const { events, connected } = useTxLineStream();
 
   return (
     <div className="card p-4">

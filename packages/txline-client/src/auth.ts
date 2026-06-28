@@ -11,14 +11,35 @@ export interface TokenActivationParams {
   guestJwt: string;
 }
 
+let cachedGuest: { token: string; expiresAt: number; devnet: boolean } | null =
+  null;
+
+/** Guest JWTs are short-lived; cache per environment to avoid redundant auth calls. */
+const GUEST_TTL_MS = 50 * 60 * 1000;
+
 /** Start guest session — required alongside X-Api-Token on data requests. */
 export async function startGuestSession(useDevnet = false): Promise<GuestAuthResponse> {
+  const now = Date.now();
+  if (
+    cachedGuest &&
+    cachedGuest.devnet === useDevnet &&
+    cachedGuest.expiresAt > now
+  ) {
+    return { token: cachedGuest.token };
+  }
+
   const base = useDevnet ? TXLINE_DEV_API : TXLINE_MAINNET_API;
   const res = await fetch(`${base}/auth/guest/start`, { method: "POST" });
   if (!res.ok) {
     throw new Error(`Guest auth failed: ${res.status} ${res.statusText}`);
   }
-  return res.json();
+  const data = (await res.json()) as GuestAuthResponse;
+  cachedGuest = {
+    token: data.token,
+    expiresAt: now + GUEST_TTL_MS,
+    devnet: useDevnet,
+  };
+  return data;
 }
 
 /** Activate API token after on-chain subscription. */
