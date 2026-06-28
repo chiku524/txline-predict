@@ -9,6 +9,7 @@ const links = [
   { href: "/", label: "Home" },
   { href: "/matches", label: "Matches" },
   { href: "/markets", label: "Markets" },
+  { href: "/dashboard", label: "Dashboard" },
 ];
 
 export function Header() {
