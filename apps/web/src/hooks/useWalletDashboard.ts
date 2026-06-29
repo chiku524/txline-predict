@@ -8,6 +8,7 @@ import {
   parseChainFixtureId,
   type WalletPositionEntry,
 } from "@/lib/solana/positions";
+import { defaultOutcomeLabel } from "@/lib/solana/anchor-decode";
 import { useUsdcBalance } from "@/hooks/useUsdcBalance";
 
 export interface EnrichedBet extends WalletPositionEntry {
@@ -58,9 +59,12 @@ export function useWalletDashboard(markets: PredictionMarket[]) {
           : null;
         const key = parsed ? `${parsed.fixtureId}:${parsed.marketType}` : null;
         const marketMeta = key ? (marketIndex.get(key) ?? null) : null;
+        const idx = entry.position.outcomeIndex;
         const outcomeLabel =
-          marketMeta?.outcomes[entry.position.outcomeIndex]?.label ??
-          `Outcome ${entry.position.outcomeIndex + 1}`;
+          marketMeta?.outcomes[idx]?.label ??
+          (parsed
+            ? defaultOutcomeLabel(parsed.marketType, idx)
+            : `Outcome ${idx + 1}`);
 
         return { ...entry, marketMeta, outcomeLabel };
       });

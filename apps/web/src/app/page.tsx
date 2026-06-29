@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { LiveFeed } from "@/components/LiveFeed";
 import { MarketCard } from "@/components/MarketCard";
@@ -16,6 +17,13 @@ import {
 import { getFixtures } from "@/lib/txline";
 
 export const revalidate = 60;
+
+export const metadata: Metadata = {
+  title: "Home",
+  description:
+    "Trade World Cup prediction markets on Solana with live TxLINE match data, transparent odds, and verifiable settlement.",
+  alternates: { canonical: "/" },
+};
 
 export default async function HomePage() {
   const [fixtures, featured, secondary, allMarkets] = await Promise.all([

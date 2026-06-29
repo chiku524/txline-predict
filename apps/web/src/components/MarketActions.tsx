@@ -50,6 +50,12 @@ export function MarketActions({ market }: MarketActionsProps) {
     "open" | "locked" | "resolved" | "cancelled" | "unknown"
   >("unknown");
   const [winningOutcome, setWinningOutcome] = useState<number | null>(null);
+  const [settlementRoot, setSettlementRoot] = useState<string | null>(null);
+  const [settlementProof, setSettlementProof] = useState<{
+    root: string;
+    validatedAt?: string;
+    useVerifiedProof?: boolean;
+  } | null>(null);
   const [step, setStep] = useState<ActionStep>("idle");
   const [error, setError] = useState<string | null>(null);
   const [txSig, setTxSig] = useState<string | null>(null);
@@ -62,7 +68,41 @@ export function MarketActions({ market }: MarketActionsProps) {
     const state = await fetchOnChainMarketStatus(connection, marketPda);
     setChainStatus(state.status);
     setWinningOutcome(state.winningOutcome);
+    setSettlementRoot(state.settlementRoot);
   }, [connection, marketPda]);
+
+  useEffect(() => {
+    if (chainStatus !== "resolved") {
+      setSettlementProof(null);
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(
+          `/api/txline/settlement?fixtureId=${encodeURIComponent(market.fixtureId)}&marketType=${market.type}`
+        );
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as {
+          proof?: { root: string; validatedAt?: string };
+          useVerifiedProof?: boolean;
+        };
+        if (cancelled || !data.proof) return;
+        setSettlementProof({
+          root: data.proof.root,
+          validatedAt: data.proof.validatedAt,
+          useVerifiedProof: data.useVerifiedProof,
+        });
+      } catch {
+        /* on-chain root still shown below */
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [chainStatus, market.fixtureId, market.type]);
 
   useEffect(() => {
     void refreshChain();
@@ -268,6 +308,32 @@ export function MarketActions({ market }: MarketActionsProps) {
           On-chain winner:{" "}
           <strong>{market.outcomes[winningOutcome]?.label ?? "—"}</strong>
         </p>
+      )}
+
+      {chainStatus === "resolved" && (settlementProof ?? settlementRoot) && (
+        <div className="market-card__proof">
+          <div className="font-semibold text-[var(--accent)]">
+            TxLINE verification receipt
+          </div>
+          <div className="mt-1 break-all font-mono text-[var(--muted)]">
+            root:{" "}
+            {(settlementProof?.root ?? settlementRoot ?? "").slice(0, 48)}
+            {(settlementProof?.root ?? settlementRoot ?? "").length > 48
+              ? "…"
+              : ""}
+          </div>
+          {settlementProof?.validatedAt && (
+            <div className="mt-1 text-[10px] text-[var(--muted)]">
+              Validated{" "}
+              {new Date(settlementProof.validatedAt).toLocaleString()}
+            </div>
+          )}
+          {settlementProof?.useVerifiedProof === false && (
+            <div className="mt-1 text-[10px] text-[var(--muted)]">
+              Authority-settled (demo/dev — no live Merkle path)
+            </div>
+          )}
+        </div>
       )}
 
       {canSettle && (

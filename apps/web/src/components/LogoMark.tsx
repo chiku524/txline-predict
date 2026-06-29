@@ -1,0 +1,50 @@
+export function LogoMark({
+  size = 36,
+  className,
+}: {
+  size?: number;
+  className?: string;
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 512 512"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden
+    >
+      <circle cx="256" cy="256" r="240" fill="#0f1623" />
+
+      {/* Soccer ball — perfect circle, geometric center of canvas */}
+      <circle cx="256" cy="256" r="76" fill="#e8edf5" />
+      <path
+        d="M256 180 L272.4 212.8 L307.6 212.8 L279.6 233.6 L291.2 268.8 L256 248 L220.8 268.8 L232.4 233.6 L204.4 212.8 L239.6 212.8 Z"
+        fill="#0f1623"
+      />
+      <path
+        d="M256 248 L291.2 268.8 M256 248 L220.8 268.8 M256 248 L256 180"
+        stroke="#0f1623"
+        strokeWidth="5"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M272.4 212.8 L307.6 212.8 M232.4 233.6 L204.4 212.8 M220.8 268.8 L232.4 233.6 M291.2 268.8 L279.6 233.6"
+        stroke="#0f1623"
+        strokeWidth="4"
+        strokeLinecap="round"
+      />
+
+      {/* TxLINE swoosh — curves over the ball, exits top-right */}
+      <path
+        d="M 112 368 C 168 312, 196 212, 276 188 C 336 170, 376 142, 400 118"
+        stroke="#22d3a6"
+        strokeWidth="26"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="112" cy="368" r="14" fill="#22d3a6" />
+    </svg>
+  );
+}

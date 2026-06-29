@@ -5,6 +5,8 @@
   "description": "Verifiable World Cup prediction markets powered by TxLINE on Solana",
   "scripts": {
     "dev": "npm run dev --workspace=apps/web",
+    "dev:clean": "npm run dev:clean --workspace=apps/web",
+    "dev:fresh": "npm run dev:fresh --workspace=apps/web",
     "build": "npm run build --workspace=apps/web",
     "start": "npm run start --workspace=apps/web",
     "lint": "npm run lint --workspace=apps/web",
@@ -14,6 +16,7 @@
     "txline:setup": "tsx scripts/setup-txline-access.ts",
     "txline:setup:devnet": "cross-env TXLINE_USE_DEVNET=true tsx scripts/setup-txline-access.ts",
     "devnet:fund": "tsx scripts/fund-devnet.ts",
+    "devnet:fund-agents": "tsx scripts/fund-agents.ts",
     "devnet:deploy": "wsl bash scripts/deploy-devnet.sh",
     "devnet:wait-deploy": "wsl bash scripts/wait-and-deploy-devnet.sh",
     "local:dev": "wsl bash scripts/setup-local-dev.sh"

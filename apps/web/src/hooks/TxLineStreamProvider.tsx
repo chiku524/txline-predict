@@ -32,21 +32,12 @@ interface TxLineStreamContextValue {
   subscribe: (listener: (data: StreamMessage) => void) => () => void;
 }
 
-const FALLBACK: FeedEvent[] = [
-  {
-    id: "boot",
-    type: "status",
-    message: "Connecting to TxLINE…",
-    at: new Date().toISOString(),
-  },
-];
-
 const TxLineStreamContext = createContext<TxLineStreamContextValue | null>(
   null
 );
 
 export function TxLineStreamProvider({ children }: { children: ReactNode }) {
-  const [events, setEvents] = useState<FeedEvent[]>(FALLBACK);
+  const [events, setEvents] = useState<FeedEvent[]>([]);
   const [connected, setConnected] = useState(false);
   const listenersRef = useRef(new Set<(data: StreamMessage) => void>());
 

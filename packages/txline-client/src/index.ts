@@ -5,6 +5,8 @@ export * from "./markets";
 export * from "./odds";
 export * from "./scores";
 export * from "./settlement";
+export * from "./sharp-movements";
+export * from "./arena-strategies";
 export * from "./sse";
 export * from "./streams";
 export * from "./types";

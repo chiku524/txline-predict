@@ -29,7 +29,7 @@ export function MatchCard({ fixture }: { fixture: TxLineFixture }) {
         <div className="flex-1 text-right">
           <div className="text-lg font-semibold">{fixture.homeTeam}</div>
         </div>
-        <div className="rounded-xl bg-[var(--surface-2)] px-4 py-2 text-center">
+        <div className="nested-glass rounded-xl px-4 py-2 text-center">
           <div className="text-2xl font-bold tabular-nums">
             {fixture.homeScore ?? 0} : {fixture.awayScore ?? 0}
           </div>

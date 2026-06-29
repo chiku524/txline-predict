@@ -25,6 +25,7 @@ test-ledger/
 **/keypair.json
 platform/platform-wallet.json
 platform/credentials.json
+platform/agent-*.json
 platform/local-usdc-mint.txt
 
 # IDE

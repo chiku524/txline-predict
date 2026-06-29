@@ -1,18 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BN } from "@coral-xyz/anchor";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
-import {
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-  TOKEN_PROGRAM_ID,
-  createAssociatedTokenAccountInstruction,
-  getAssociatedTokenAddressSync,
-} from "@solana/spl-token";
-import { SystemProgram, Transaction } from "@solana/web3.js";
 import type { PredictionMarket } from "@txline-predict/txline-client";
 import { Modal } from "@/components/Modal";
+import { useBetCelebration } from "@/components/BetCelebrationProvider";
 import { useUsdcBalance } from "@/hooks/useUsdcBalance";
 import {
   QUICK_STAKES,
@@ -25,19 +18,19 @@ import {
 } from "@/lib/betting";
 import { lamportsToUsdc } from "@/lib/demo-data";
 import {
-  getMarketPda,
-  getPositionPda,
-  getUsdcMint,
-  marketChainId,
   parseUsdcAmount,
   USDC_DECIMALS,
 } from "@/lib/solana/config";
 import { fetchOnChainMarket } from "@/lib/solana/market";
+import {
+  assertBetPreflight,
+  buildBetTransaction,
+  sendBetTransaction,
+} from "@/lib/solana/bet-transaction";
 import { getPredictMarketProgram } from "@/lib/solana/program";
 import { outcomeToneClass } from "@/lib/outcome-colors";
 
-type BetStep = "idle" | "market" | "wallet" | "deposit" | "done" | "error";
-
+type BetStep = "idle" | "preflight" | "signing" | "done" | "error";
 interface BetModalProps {
   open: boolean;
   market: PredictionMarket;
@@ -63,6 +56,7 @@ export function BetModal({
   const wallet = useWallet();
   const { setVisible } = useWalletModal();
   const { balance, refresh } = useUsdcBalance();
+  const { celebrateBet } = useBetCelebration();
 
   const [amount, setAmount] = useState("5");
   const [step, setStep] = useState<BetStep>("idle");
@@ -74,7 +68,6 @@ export function BetModal({
   } | null>(null);
 
   const network = process.env.NEXT_PUBLIC_SOLANA_NETWORK ?? "devnet";
-  const usdcMint = getUsdcMint(network);
   const isDevnet = network !== "mainnet-beta";
 
   const stake = useMemo(() => {
@@ -111,7 +104,7 @@ export function BetModal({
   const insufficientBalance =
     balance != null && stake > 0 && stake > balance;
 
-  const busy = step === "market" || step === "wallet" || step === "deposit";
+  const busy = step === "preflight" || step === "signing";
   const success = step === "done" && txSig != null;
 
   useEffect(() => {
@@ -128,15 +121,17 @@ export function BetModal({
     if (!open) return;
     let cancelled = false;
 
-    void fetchOnChainMarket(connection, market.fixtureId, market.type).then(
-      (state) => {
+    void fetchOnChainMarket(connection, market.fixtureId, market.type)
+      .then((state) => {
         if (cancelled || !state.exists) return;
         setChainPools({
           total: state.totalDeposited,
           outcome: state.outcomePools[outcomeIndex] ?? 0,
         });
-      }
-    );
+      })
+      .catch(() => {
+        /* RPC unavailable — keep off-chain pool estimates */
+      });
 
     return () => {
       cancelled = true;
@@ -175,9 +170,19 @@ export function BetModal({
       return;
     }
 
-    setStep("market");
+    setStep("preflight");
 
     try {
+      await assertBetPreflight(
+        connection,
+        market.fixtureId,
+        market.type,
+        market.kickoffUtc,
+        lamports,
+        wallet.publicKey,
+        network
+      );
+
       const anchorWallet = {
         publicKey: wallet.publicKey,
         signTransaction: wallet.signTransaction,
@@ -185,75 +190,25 @@ export function BetModal({
       };
 
       const program = getPredictMarketProgram(connection, anchorWallet);
-      const chainId = marketChainId(market.fixtureId, market.type);
-      const [marketPda] = getMarketPda(market.fixtureId, market.type);
-      const vault = getAssociatedTokenAddressSync(usdcMint, marketPda, true);
-      const depositorAta = getAssociatedTokenAddressSync(
-        usdcMint,
-        wallet.publicKey
-      );
+      const tx = await buildBetTransaction({
+        program,
+        connection,
+        wallet: wallet.publicKey,
+        fixtureId: market.fixtureId,
+        marketType: market.type,
+        kickoffUtc: market.kickoffUtc,
+        outcomeCount: market.outcomes.length,
+        outcomeIndex,
+        stakeLamports: lamports,
+        network,
+      });
 
-      const marketAccount = await connection.getAccountInfo(marketPda);
-      const lockTs = Math.floor(new Date(market.kickoffUtc).getTime() / 1000);
-
-      if (!marketAccount) {
-        await program.methods
-          .createMarket(chainId, market.outcomes.length, new BN(lockTs))
-          .accounts({
-            authority: wallet.publicKey,
-            market: marketPda,
-            usdcMint,
-            vault,
-            tokenProgram: TOKEN_PROGRAM_ID,
-            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-            systemProgram: SystemProgram.programId,
-          })
-          .rpc();
-      }
-
-      setStep("wallet");
-      const ataInfo = await connection.getAccountInfo(depositorAta);
-      if (!ataInfo) {
-        const ix = createAssociatedTokenAccountInstruction(
-          wallet.publicKey,
-          depositorAta,
-          wallet.publicKey,
-          usdcMint
-        );
-        const tx = new Transaction().add(ix);
-        tx.feePayer = wallet.publicKey;
-        const { blockhash, lastValidBlockHeight } =
-          await connection.getLatestBlockhash();
-        tx.recentBlockhash = blockhash;
-        const signed = await wallet.signTransaction(tx);
-        const ataSig = await connection.sendRawTransaction(signed.serialize());
-        await connection.confirmTransaction(
-          { signature: ataSig, blockhash, lastValidBlockHeight },
-          "confirmed"
-        );
-      }
-
-      setStep("deposit");
-      const [positionPda] = getPositionPda(
-        marketPda,
-        wallet.publicKey,
-        outcomeIndex
-      );
-      const sig = await program.methods
-        .deposit(outcomeIndex, new BN(lamports))
-        .accounts({
-          depositor: wallet.publicKey,
-          market: marketPda,
-          position: positionPda,
-          depositorTokenAccount: depositorAta,
-          vault,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          systemProgram: SystemProgram.programId,
-        })
-        .rpc();
+      setStep("signing");
+      const sig = await sendBetTransaction(connection, tx, anchorWallet);
 
       setTxSig(sig);
       setStep("done");
+      celebrateBet();
       void refresh();
     } catch (err) {
       setStep("error");
@@ -269,7 +224,7 @@ export function BetModal({
       } else if (msg.includes("User rejected")) {
         setError("Transaction cancelled in wallet.");
       } else {
-        setError(msg.length > 200 ? `${msg.slice(0, 200)}…` : msg);
+        setError(msg.length > 240 ? `${msg.slice(0, 240)}…` : msg);
       }
     }
   }, [
@@ -280,22 +235,21 @@ export function BetModal({
     market.kickoffUtc,
     market.outcomes.length,
     market.type,
+    network,
     outcome,
     outcomeIndex,
     refresh,
+    celebrateBet,
     setVisible,
-    usdcMint,
     wallet,
   ]);
 
   const stepLabel =
-    step === "market"
-      ? "Preparing on-chain market vault…"
-      : step === "wallet"
-        ? "Setting up your USDC account…"
-        : step === "deposit"
-          ? "Approve the transaction in your wallet…"
-          : null;
+    step === "preflight"
+      ? "Checking wallet and market…"
+      : step === "signing"
+        ? "Approve the transaction in your wallet…"
+        : null;
 
   if (!outcome) return null;
 
@@ -476,8 +430,9 @@ export function BetModal({
 
           {isDevnet && (
             <p className="bet-modal-footnote">
-              Devnet test USDC only. Stakes are held in an on-chain escrow until
-              the match settles via TxLINE.
+              Devnet test USDC only. You also need ~0.02 SOL on devnet for fees
+              and account rent. Stakes are held in on-chain escrow until
+              settlement via TxLINE.
             </p>
           )}
 

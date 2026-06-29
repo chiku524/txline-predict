@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { MarketsBrowser } from "@/components/MarketsBrowser";
 import { OutcomeColorLegend } from "@/components/OutcomeColorLegend";
 import { WorldCupHero } from "@/components/WorldCupHero";
@@ -6,6 +7,13 @@ import { getMarketsGrouped } from "@/lib/markets";
 import { getFixtures, isDemoMode } from "@/lib/txline";
 
 export const revalidate = 60;
+
+export const metadata: Metadata = {
+  title: "Markets",
+  description:
+    "Browse and bet on World Cup prediction markets. Compare odds, open bet slips, and settle on-chain with TxLINE proofs.",
+  alternates: { canonical: "/markets" },
+};
 
 const STEPS = [
   {

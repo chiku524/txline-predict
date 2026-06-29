@@ -7,6 +7,7 @@ import type { StatValidationPayload } from "@txline-predict/txline-client";
 import { BorshAccountsCoder, type Idl } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
 import idl from "@/lib/solana/idl/predict_market.json";
+import { decodeMarketStatus } from "@/lib/solana/chain-status";
 import {
   getMarketPda,
   getPositionPda,
@@ -50,7 +51,17 @@ export function useUserPositions(
             wallet.publicKey!,
             outcomeIndex
           );
-          const info = await connection.getAccountInfo(positionPda);
+          let info;
+          try {
+            info = await connection.getAccountInfo(positionPda);
+          } catch {
+            return {
+              outcomeIndex,
+              amount: 0,
+              claimed: false,
+              exists: false,
+            };
+          }
           if (!info) {
             return {
               outcomeIndex,
@@ -136,13 +147,7 @@ export function toAnchorStatTerm(term: StatValidationPayload["statA"]) {
 export function marketStatusFromChain(
   status: unknown
 ): "open" | "locked" | "resolved" | "cancelled" | "unknown" {
-  if (!status || typeof status !== "object") return "unknown";
-  const key = Object.keys(status)[0];
-  if (key === "open") return "open";
-  if (key === "locked") return "locked";
-  if (key === "resolved") return "resolved";
-  if (key === "cancelled") return "cancelled";
-  return "unknown";
+  return decodeMarketStatus(status);
 }
 
 export async function fetchOnChainMarketStatus(
@@ -154,7 +159,12 @@ export async function fetchOnChainMarketStatus(
   settlementRoot: string | null;
 }> {
   const marketCoder = new BorshAccountsCoder(idl as Idl);
-  const info = await connection.getAccountInfo(marketPda);
+  let info;
+  try {
+    info = await connection.getAccountInfo(marketPda);
+  } catch {
+    return { status: "unknown", winningOutcome: null, settlementRoot: null };
+  }
   if (!info) {
     return { status: "unknown", winningOutcome: null, settlementRoot: null };
   }

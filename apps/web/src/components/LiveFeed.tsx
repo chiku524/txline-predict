@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useTxLineStream } from "@/hooks/TxLineStreamProvider";
 
 function formatTime(iso: string): string {
@@ -8,6 +9,16 @@ function formatTime(iso: string): string {
     minute: "2-digit",
     second: "2-digit",
   });
+}
+
+function EventTime({ iso }: { iso: string }) {
+  const [label, setLabel] = useState("");
+
+  useEffect(() => {
+    setLabel(formatTime(iso));
+  }, [iso]);
+
+  return <span suppressHydrationWarning>{label || "—"}</span>;
 }
 
 export function LiveFeed() {
@@ -22,18 +33,24 @@ export function LiveFeed() {
         </span>
       </div>
       <ul className="flex max-h-72 flex-col gap-2 overflow-y-auto">
-        {events.map((ev) => (
-          <li
-            key={ev.id}
-            className="rounded-lg bg-[var(--surface-2)] px-3 py-2 text-xs"
-          >
-            <div className="mb-1 flex items-center justify-between gap-2 text-[10px] text-[var(--muted)]">
-              <span className="uppercase text-[var(--accent)]">{ev.type}</span>
-              <span>{formatTime(ev.at)}</span>
-            </div>
-            {ev.message}
+        {events.length === 0 ? (
+          <li className="rounded-lg nested-glass px-3 py-2 text-xs text-[var(--muted)]">
+            Connecting to TxLINE…
           </li>
-        ))}
+        ) : (
+          events.map((ev) => (
+            <li
+              key={ev.id}
+              className="rounded-lg nested-glass px-3 py-2 text-xs"
+            >
+              <div className="mb-1 flex items-center justify-between gap-2 text-[10px] text-[var(--muted)]">
+                <span className="uppercase text-[var(--accent)]">{ev.type}</span>
+                <EventTime iso={ev.at} />
+              </div>
+              {ev.message}
+            </li>
+          ))
+        )}
       </ul>
     </div>
   );

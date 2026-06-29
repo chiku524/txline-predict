@@ -10,8 +10,15 @@ use txline_cpi::{
 
 declare_id!("47BEuEzRc1Aj6QAZvYkuebLSqGRAcKnLs8HLuW8Gc5e3");
 
-/// TxLINE mainnet program — CPI target for validate_stat settlement.
-pub const TXLINE_PROGRAM_ID: Pubkey = pubkey!("9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA");
+/// TxLINE oracle programs — CPI targets for validate_stat settlement.
+pub const TXLINE_PROGRAM_ID_MAINNET: Pubkey =
+    pubkey!("9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA");
+pub const TXLINE_PROGRAM_ID_DEVNET: Pubkey =
+    pubkey!("6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J");
+
+fn is_txline_program(id: &Pubkey) -> bool {
+    *id == TXLINE_PROGRAM_ID_MAINNET || *id == TXLINE_PROGRAM_ID_DEVNET
+}
 
 const MAX_OUTCOMES: usize = 8;
 
@@ -129,6 +136,11 @@ pub mod predict_market {
         require!(
             winning_outcome < market.outcome_count,
             PredictError::InvalidOutcome
+        );
+
+        require!(
+            is_txline_program(&ctx.accounts.txline_program.key()),
+            PredictError::InvalidTxLineProgram
         );
 
         if !fixture_proof.is_empty() {
@@ -353,8 +365,7 @@ pub struct SettleMarket<'info> {
     /// CHECK: TxLINE daily scores merkle roots PDA
     pub daily_scores_merkle_roots: UncheckedAccount<'info>,
 
-    /// CHECK: TxLINE oracle program for CPI validate_stat
-    #[account(address = TXLINE_PROGRAM_ID)]
+    /// CHECK: TxLINE oracle program for CPI validate_stat (mainnet or devnet)
     pub txline_program: UncheckedAccount<'info>,
 }
 
@@ -456,4 +467,6 @@ pub enum PredictError {
     EmptyWinningPool,
     #[msg("Unknown market type in fixture id")]
     UnknownMarketType,
+    #[msg("Invalid TxLINE oracle program id")]
+    InvalidTxLineProgram,
 }

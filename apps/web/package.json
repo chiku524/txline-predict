@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\" && next dev",
+    "dev:fresh": "node scripts/dev-fresh.js",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -19,7 +21,7 @@
     "@solana/web3.js": "^1.98.2",
     "@txline-predict/txline-client": "*",
     "clsx": "^2.1.1",
-    "next": "^15.3.4",
+    "next": "15.4.11",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

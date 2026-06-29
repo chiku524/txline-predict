@@ -41,18 +41,21 @@ TxLINE Predict is a permissionless prediction market platform for the 2026 FIFA 
 
 Base URLs:
 - Mainnet API: `https://txline.txodds.com`
-- Oracle API: `https://oracle.txodds.com/api`
-- Devnet Oracle: `https://oracle-dev.txodds.com/api`
+- Devnet API: `https://txline-dev.txodds.com`
+
+All data routes below use subscribed `/api/*` paths (not `guest/*`). Requests require `Authorization: Bearer <guest JWT>` and `X-Api-Token: <activated token>`.
 
 | Endpoint | Method | Usage |
 |----------|--------|-------|
 | `/auth/guest/start` | POST | Obtain guest JWT |
 | `/api/token/activate` | POST | Exchange on-chain subscribe tx for API token |
-| `/api/guest/odds/snapshot` | GET | Initial odds / implied probabilities |
-| `/api/guest/odds/stream` | SSE | Live odds updates |
-| `/api/guest/scores/snapshot` | GET | Match scores and events |
-| `/api/guest/scores/stream` | SSE | Live score updates |
-| `/api/guest/fixtures/snapshot` | GET | Fixture metadata |
+| `/api/fixtures/snapshot` | GET | Fixture metadata (teams, kickoff, competition) |
+| `/api/scores/snapshot` | GET | Match scores, status, phase, events |
+| `/api/scores/stream` | SSE | Live score and event updates |
+| `/api/odds/snapshot` | GET | Bulk consensus odds for market pricing |
+| `/api/odds/snapshot/{fixtureId}` | GET | Per-fixture odds fallback |
+| `/api/odds/stream` | SSE | Live odds updates |
+| `/api/scores/stat-validation` | GET | Merkle proof payload for on-chain `validate_stat` CPI |
 
 On-chain:
 - Mainnet program: `9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA`
@@ -81,6 +84,15 @@ Demo/dev fallback: empty Merkle proof path requires the market authority signer 
 
 | Component | Target | URL |
 |-----------|--------|-----|
-| Web app | Vercel | _(TBD)_ |
-| Smart contract | Solana devnet | _(TBD)_ |
-| Demo video | YouTube/Loom | _(TBD)_ |
+| Web app | Vercel | https://txline-predict.vercel.app |
+| Smart contract | Solana devnet | `47BEuEzRc1Aj6QAZvYkuebLSqGRAcKnLs8HLuW8Gc5e3` |
+| Demo video | YouTube/Loom | _(TBD — required for submission)_ |
+
+### App-internal proxy routes
+
+| Route | Purpose |
+|-------|---------|
+| `GET /api/txline/stream` | Multiplexed odds + scores SSE for browser |
+| `GET /api/txline/fixtures` | Fixtures snapshot (server-side) |
+| `GET /api/txline/settlement` | Settlement plan + Merkle proof for keepers |
+| `GET /api/markets` | Normalised prediction markets JSON |

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { MatchCard } from "@/components/MatchCard";
 import { LiveFeed } from "@/components/LiveFeed";
 import { WorldCupHero } from "@/components/WorldCupHero";
@@ -11,6 +12,13 @@ import { getMarkets } from "@/lib/markets";
 import { getFixtures, isDemoMode } from "@/lib/txline";
 
 export const revalidate = 60;
+
+export const metadata: Metadata = {
+  title: "Matches",
+  description:
+    "Live World Cup fixtures and match schedules from TxLINE, with linked prediction markets for every game.",
+  alternates: { canonical: "/matches" },
+};
 
 export default async function MatchesPage() {
   const [fixtures, markets] = await Promise.all([getFixtures(), getMarkets()]);

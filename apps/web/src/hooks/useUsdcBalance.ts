@@ -31,7 +31,11 @@ export function useUsdcBalance() {
 
   useEffect(() => {
     void refresh();
-    const id = setInterval(() => void refresh(), 15_000);
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void refresh();
+      }
+    }, 60_000);
     return () => clearInterval(id);
   }, [refresh]);
 

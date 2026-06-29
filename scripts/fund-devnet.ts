@@ -2,7 +2,7 @@
 /**
  * Fund platform wallet on devnet with SOL and USDC.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -15,7 +15,18 @@ import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const WALLET_PATH = join(ROOT, "platform/platform-wallet.json");
-const DEVNET_RPC = process.env.SOLANA_DEVNET_RPC ?? "https://api.devnet.solana.com";
+const ENV_PATH = join(ROOT, "apps/web/.env.local");
+
+function loadDevnetRpc(): string {
+  if (process.env.SOLANA_DEVNET_RPC) return process.env.SOLANA_DEVNET_RPC;
+  if (existsSync(ENV_PATH)) {
+    const match = readFileSync(ENV_PATH, "utf8").match(/^NEXT_PUBLIC_RPC_URL=(.+)$/m);
+    if (match) return match[1].trim();
+  }
+  return "https://api.devnet.solana.com";
+}
+
+const DEVNET_RPC = loadDevnetRpc();
 /** Circle devnet USDC mint (community faucet). */
 const DEVNET_USDC = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
 

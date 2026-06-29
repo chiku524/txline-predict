@@ -2,6 +2,8 @@ import { BorshAccountsCoder, type Idl } from "@coral-xyz/anchor";
 import type { Connection, PublicKey } from "@solana/web3.js";
 import idl from "./idl/predict_market.json";
 import { PREDICT_MARKET_PROGRAM_ID } from "./config";
+import { decodeMarketStatus } from "./chain-status";
+import { anchorField, anchorNumber } from "./anchor-decode";
 
 const positionCoder = new BorshAccountsCoder(idl as Idl);
 const marketCoder = new BorshAccountsCoder(idl as Idl);
@@ -9,18 +11,6 @@ const marketCoder = new BorshAccountsCoder(idl as Idl);
 const POSITION_DISCRIMINATOR = Buffer.from([
   170, 188, 143, 228, 122, 64, 247, 208,
 ]);
-
-function marketStatusFromChain(
-  raw: unknown
-): "open" | "locked" | "resolved" | "cancelled" | "unknown" {
-  if (!raw || typeof raw !== "object") return "unknown";
-  const key = Object.keys(raw)[0];
-  if (key === "open") return "open";
-  if (key === "locked") return "locked";
-  if (key === "resolved") return "resolved";
-  if (key === "cancelled") return "cancelled";
-  return "unknown";
-}
 
 export interface DecodedPosition {
   pubkey: PublicKey;
@@ -48,10 +38,6 @@ export interface WalletPositionEntry {
   status: "active" | "claimable" | "won" | "lost";
 }
 
-function toNumber(value: number | { toNumber(): number }): number {
-  return typeof value === "object" ? value.toNumber() : Number(value);
-}
-
 export async function fetchWalletPositions(
   connection: Connection,
   wallet: PublicKey
@@ -74,23 +60,28 @@ export async function fetchWalletPositions(
   return accounts
     .map(({ pubkey, account }) => {
       try {
-        const decoded = positionCoder.decode("Position", account.data) as {
-          market: PublicKey;
-          depositor: PublicKey;
-          outcomeIndex: number;
-          amount: number | { toNumber(): number };
-          claimed: boolean;
-        };
-        if (!decoded.depositor.equals(wallet)) return null;
-        const amount = toNumber(decoded.amount);
+        const decoded = positionCoder.decode("Position", account.data) as Record<
+          string,
+          unknown
+        >;
+        const depositor = anchorField<{ equals(b: unknown): boolean }>(
+          decoded,
+          "depositor"
+        );
+        if (!depositor?.equals(wallet)) return null;
+        const amount = anchorNumber(anchorField(decoded, "amount"));
         if (amount <= 0) return null;
+        const market = anchorField<{ toBase58(): string }>(decoded, "market");
+        if (!market) return null;
         return {
           pubkey,
-          market: decoded.market,
-          depositor: decoded.depositor,
-          outcomeIndex: Number(decoded.outcomeIndex),
+          market: market as import("@solana/web3.js").PublicKey,
+          depositor: depositor as import("@solana/web3.js").PublicKey,
+          outcomeIndex: anchorNumber(
+            anchorField(decoded, "outcomeIndex", "outcome_index")
+          ),
           amount,
-          claimed: Boolean(decoded.claimed),
+          claimed: Boolean(anchorField(decoded, "claimed")),
         };
       } catch {
         return null;
@@ -113,25 +104,29 @@ export async function fetchMarketsByPubkeys(
     const info = infos[i];
     if (!info) return;
     try {
-      const decoded = marketCoder.decode("Market", info.data) as {
-        fixtureId: string;
-        outcomeCount: number;
-        status: unknown;
-        totalDeposited: number | { toNumber(): number };
-        outcomePools: number[];
-        winningOutcome: number | null | { toNumber(): number };
-      };
+      const decoded = marketCoder.decode("Market", info.data) as Record<
+        string,
+        unknown
+      >;
+      const fixtureId = anchorField<string>(decoded, "fixtureId", "fixture_id");
+      if (!fixtureId) return;
+      const outcomeCount = anchorNumber(
+        anchorField(decoded, "outcomeCount", "outcome_count")
+      );
+      const rawPools =
+        anchorField<number[]>(decoded, "outcomePools", "outcome_pools") ?? [];
+      const winningRaw = anchorField(decoded, "winningOutcome", "winning_outcome");
       const winningOutcome =
-        decoded.winningOutcome == null
-          ? null
-          : toNumber(decoded.winningOutcome as number | { toNumber(): number });
+        winningRaw == null ? null : anchorNumber(winningRaw);
       map.set(pubkey.toBase58(), {
         pubkey,
-        fixtureId: decoded.fixtureId,
-        outcomeCount: Number(decoded.outcomeCount),
-        status: marketStatusFromChain(decoded.status),
-        totalDeposited: toNumber(decoded.totalDeposited),
-        outcomePools: decoded.outcomePools.map(Number),
+        fixtureId,
+        outcomeCount,
+        status: decodeMarketStatus(anchorField(decoded, "status")),
+        totalDeposited: anchorNumber(
+          anchorField(decoded, "totalDeposited", "total_deposited")
+        ),
+        outcomePools: rawPools.slice(0, outcomeCount).map(Number),
         winningOutcome,
       });
     } catch {

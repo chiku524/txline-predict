@@ -57,15 +57,21 @@ txline-predict/
 
 ## TxLINE endpoints used
 
+Subscribed routes (require activated `TXLINE_API_TOKEN` — see [World Cup free tier](https://txline.txodds.com/documentation/worldcup)):
+
 | Endpoint | Purpose |
 |----------|---------|
 | `POST /auth/guest/start` | Guest JWT for subscription activation |
 | `POST /api/token/activate` | Activate API token after on-chain subscribe |
-| `GET /api/guest/odds/snapshot` | Consensus odds for market pricing |
-| `GET /api/guest/odds/stream` | SSE live odds feed |
-| `GET /api/guest/scores/snapshot` | Match scores and events |
-| `GET /api/guest/scores/stream` | SSE live scores feed |
+| `GET /api/fixtures/snapshot` | Fixture schedule and metadata |
+| `GET /api/scores/snapshot` | Match scores and events |
+| `GET /api/scores/stream` | SSE live scores feed |
+| `GET /api/odds/snapshot` | Consensus odds for market pricing |
+| `GET /api/odds/stream` | SSE live odds feed |
+| `GET /api/scores/stat-validation` | Merkle proof for on-chain settlement |
 | TxLINE `validate_stat` CPI | On-chain settlement verification via permissionless `settle_market` |
+
+Live deployment: https://txline-predict.vercel.app
 
 ## Smart contract (devnet)
 
@@ -81,9 +87,9 @@ After deploy, connect wallet on `/markets` and use **Back {outcome}** to deposit
 
 ## Hackathon submission checklist
 
-- [ ] Deploy web app (Vercel / similar)
-- [ ] Deploy Anchor program to devnet
-- [ ] Record 5-min demo video (Loom/YouTube)
+- [x] Deploy web app — https://txline-predict.vercel.app
+- [x] Deploy Anchor program to devnet — `47BEuEzRc1Aj6QAZvYkuebLSqGRAcKnLs8HLuW8Gc5e3`
+- [ ] Record 5-min demo video (Loom/YouTube) — **required for screening**
 - [ ] Fill submission form on Superteam Earn
 - [ ] Complete `docs/TECHNICAL.md` feedback section
 
